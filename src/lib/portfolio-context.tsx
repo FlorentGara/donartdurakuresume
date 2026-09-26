@@ -1,7 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { usePortfolioData } from '@/hooks/usePortfolioData';
 
-interface PortfolioDataContextValue extends ReturnType<typeof usePortfolioData> {}
+type PortfolioDataContextValue = ReturnType<typeof usePortfolioData>;
 
 const PortfolioDataContext = createContext<PortfolioDataContextValue | undefined>(undefined);
 

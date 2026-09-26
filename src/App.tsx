@@ -38,7 +38,6 @@ import AdminMedia from '@/components/admin/AdminMedia';
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminSeo from '@/components/admin/AdminSeo';
 
-import { usePortfolio } from '@/lib/portfolio-context';
 
 function PublicSite() {
   return (

@@ -69,7 +69,7 @@ export default function AdminProcess() {
 
   return (
     <div>
-      <PageHeader title="Process" description="Manage your creative process steps." actions={<Button onClick={() => setEditing({ id: '', number: String(items.length + 1).padStart(2, '0'), title: '', description: '', icon: null, published: true, sort_order: items.length, created_at: '', updated_at: '' })}><Plus className="w-4 h-4 mr-2" />Add Step</Button>} />
+      <PageHeader title="Process" description="Manage your creative process steps." actions={<Button onClick={() => setEditing({ id: '', number: String(items.length + 1).padStart(2, '0'), title: '', description: '', icon: null, published: true, sort_order: items.length })}><Plus className="w-4 h-4 mr-2" />Add Step</Button>} />
       {items.length === 0 ? <EmptyState message="No process steps yet." /> : (
         <div className="space-y-3">
           {items.map((item, i) => (

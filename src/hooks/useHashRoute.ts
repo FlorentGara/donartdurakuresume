@@ -17,7 +17,8 @@ export function useHashRoute() {
 }
 
 function parseHash(): { path: string; segments: string[]; params: Record<string, string> } {
-  const hash = window.location.hash.replace(/^#/, '') || '/';
+  const hash = window.location.hash.replace(/^#/, '') ||
+    (window.location.pathname.startsWith('/admin') ? window.location.pathname : '/');
   const [pathPart, queryPart] = hash.split('?');
   const segments = pathPart.split('/').filter(Boolean);
   const params: Record<string, string> = {};

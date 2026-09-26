@@ -18,24 +18,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
+    let active = true;
+    const verifySession = async (nextSession: Session | null) => {
+      if (!nextSession) {
+        if (active) { setSession(null); setLoading(false); }
+        return;
+      }
+      if (active) setLoading(true);
+      const { data, error } = await supabase.rpc('is_admin');
+      if (active) {
+        setSession(!error && data === true ? nextSession : null);
+        setLoading(false);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data }) => { void verifySession(data.session); });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setSession(session);
-        setLoading(false);
-      })();
+      void verifySession(session);
     });
 
-    return () => listener.subscription.unsubscribe();
+    return () => { active = false; listener.subscription.unsubscribe(); };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
+    if (error) return { error: error.message };
+    const { data: isAdmin, error: accessError } = await supabase.rpc('is_admin');
+    if (accessError || isAdmin !== true) {
+      await supabase.auth.signOut();
+      return { error: accessError ? 'Could not verify admin access. Check the database setup.' : 'This account is not a dashboard administrator.' };
+    }
+    return { error: null };
   };
 
   const signOut = async () => {

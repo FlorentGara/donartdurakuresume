@@ -69,7 +69,7 @@ export default function AdminServices() {
 
   return (
     <div>
-      <PageHeader title="Services" description="Manage the services displayed on your website." actions={<Button onClick={() => setEditing({ id: '', number: String(items.length + 1).padStart(2, '0'), title: '', description: '', icon: null, published: true, sort_order: items.length, created_at: '', updated_at: '' })}><Plus className="w-4 h-4 mr-2" />Add Service</Button>} />
+      <PageHeader title="Services" description="Manage the services displayed on your website." actions={<Button onClick={() => setEditing({ id: '', number: String(items.length + 1).padStart(2, '0'), title: '', description: '', icon: null, published: true, sort_order: items.length })}><Plus className="w-4 h-4 mr-2" />Add Service</Button>} />
       {items.length === 0 ? <EmptyState message="No services yet." /> : (
         <div className="space-y-3">
           {items.map((item, i) => (

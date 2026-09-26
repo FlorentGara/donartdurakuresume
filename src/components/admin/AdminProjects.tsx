@@ -38,7 +38,8 @@ export default function AdminProjects() {
   };
 
   const duplicate = async (p: Project) => {
-    const { id, created_at, updated_at, ...rest } = p;
+    const rest = Object.fromEntries(Object.entries(p).filter(([key]) =>
+      !['id', 'created_at', 'updated_at'].includes(key)));
     await supabase.from('projects').insert({
       ...rest,
       title: `${p.title} (Copy)`,

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Upload, Search, Trash2, Copy, Check, FileVideo, FileImage, FileText } from 'lucide-react';
+import { Upload, Search, Trash2, Copy, Check, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { MediaAsset } from '@/lib/types';
 import { useToast } from './Toast';
-import { PageHeader, Card, Input, Button, LoadingSpinner, EmptyState, ConfirmDialog } from './ui';
+import { PageHeader, Card, LoadingSpinner, EmptyState, ConfirmDialog } from './ui';
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -103,7 +103,7 @@ export default function AdminMedia() {
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 / 1024).toFixed(1))} MB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const filtered = assets.filter((a) => {

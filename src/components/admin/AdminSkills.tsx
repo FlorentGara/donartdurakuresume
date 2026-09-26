@@ -69,7 +69,7 @@ export default function AdminSkills() {
 
   return (
     <div>
-      <PageHeader title="Skills" description="Manage your skills cloud." actions={<Button onClick={() => setEditing({ id: '', name: '', category: 'Editing', icon: null, description: null, published: true, sort_order: items.length, created_at: '', updated_at: '' })}><Plus className="w-4 h-4 mr-2" />Add Skill</Button>} />
+      <PageHeader title="Skills" description="Manage your skills cloud." actions={<Button onClick={() => setEditing({ id: '', name: '', category: 'Editing', icon: null, description: null, published: true, sort_order: items.length })}><Plus className="w-4 h-4 mr-2" />Add Skill</Button>} />
       {items.length === 0 ? <EmptyState message="No skills yet." /> : (
         <div className="space-y-3">
           {items.map((item, i) => (
