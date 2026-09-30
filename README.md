@@ -21,3 +21,5 @@ For local development, copy `.env.example` to `.env`, enter the same project's U
 * **Media Library**: Upload and manage images, videos, and documents (like CVs) via Supabase Storage.
 * **SEO Settings**: Control global SEO and Open Graph metadata directly from the dashboard.
 * **Live Updates**: All changes made in the dashboard are immediately reflected on the public website.
+
+ 
