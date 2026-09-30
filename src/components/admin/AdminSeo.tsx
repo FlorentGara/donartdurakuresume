@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
 import type { SeoSettings } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Button, LoadingSpinner } from './ui';
@@ -11,27 +12,31 @@ export default function AdminSeo() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from('seo_settings').select('*').maybeSingle().then(({ data }) => {
-      setData(data as SeoSettings);
+    getDocs(collection(db, 'seo_settings')).then((snapshot) => {
+      const docData = snapshot.docs.length > 0 ? { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } : null;
+      setData(docData as SeoSettings);
       setLoading(false);
     });
   }, []);
 
   const save = async () => {
-    if (!data) return;
+    if (!data || !data.id) return;
     setSaving(true);
-    const { error } = await supabase.from('seo_settings').update({
-      seo_title: data.seo_title,
-      meta_description: data.meta_description,
-      og_title: data.og_title,
-      og_description: data.og_description,
-      og_image_url: data.og_image_url,
-      twitter_image_url: data.twitter_image_url,
-      canonical_url: data.canonical_url,
-    }).eq('id', data.id);
+    try {
+      await updateDoc(doc(db, 'seo_settings', data.id), {
+        seo_title: data.seo_title,
+        meta_description: data.meta_description,
+        og_title: data.og_title,
+        og_description: data.og_description,
+        og_image_url: data.og_image_url,
+        twitter_image_url: data.twitter_image_url,
+        canonical_url: data.canonical_url,
+      });
+      toast('SEO settings saved successfully');
+    } catch (e) {
+      toast('Failed to save SEO settings', 'error');
+    }
     setSaving(false);
-    if (error) toast('Failed to save SEO settings', 'error');
-    else toast('SEO settings saved successfully');
   };
 
   if (loading || !data) return <LoadingSpinner />;

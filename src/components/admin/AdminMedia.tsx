@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Upload, Search, Trash2, Copy, Check, FileText } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, doc, addDoc, deleteDoc } from 'firebase/firestore';
 import type { MediaAsset } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, LoadingSpinner, EmptyState, ConfirmDialog } from './ui';
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
 
-const ACCEPTED: Record<string, { bucket: string; type: string; label: string }> = {
-  'image/': { bucket: 'images', type: 'image', label: 'Image' },
-  'video/': { bucket: 'videos', type: 'video', label: 'Video' },
-  'application/pdf': { bucket: 'documents', type: 'document', label: 'Document' },
+const ACCEPTED: Record<string, { type: string; label: string }> = {
+  'image/': { type: 'image', label: 'Image' },
+  'video/': { type: 'video', label: 'Video' },
+  'application/pdf': { type: 'document', label: 'Document' },
 };
 
 export default function AdminMedia() {
@@ -18,14 +19,15 @@ export default function AdminMedia() {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'image' | 'video' | 'document'>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('media_assets').select('*').order('created_at', { ascending: false });
+    const q = query(collection(db, 'media_assets'), orderBy('created_at', 'desc'));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setAssets((data as MediaAsset[]) ?? []);
     setLoading(false);
   };
@@ -34,7 +36,15 @@ export default function AdminMedia() {
 
   const handleUpload = async (files: FileList) => {
     setUploading(true);
-    setProgress(0);
+
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+    if (!cloudName || !uploadPreset) {
+      toast('Cloudinary configuration is missing in .env', 'error');
+      setUploading(false);
+      return;
+    }
 
     for (const file of Array.from(files)) {
       if (file.size > MAX_SIZE) {
@@ -48,49 +58,52 @@ export default function AdminMedia() {
         continue;
       }
 
-      const { bucket, type } = match[1];
-      const ext = file.name.split('.').pop() ?? '';
-      const fileName = `${crypto.randomUUID()}.${ext}`;
-      const filePath = fileName;
+      const { type } = match[1];
 
-      const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file, {
-        upsert: false,
-        contentType: file.type,
-      });
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', uploadPreset);
 
-      if (uploadError) {
+        // Upload to Cloudinary
+        const resourceType = type === 'video' ? 'video' : (type === 'document' ? 'raw' : 'image');
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const data = await res.json();
+
+        // Save metadata to Firestore
+        await addDoc(collection(db, 'media_assets'), {
+          filename: file.name,
+          file_type: type,
+          file_size: file.size,
+          mime_type: file.type,
+          public_url: data.secure_url,
+          created_at: new Date().toISOString()
+        });
+      } catch (err) {
         toast(`Failed to upload ${file.name}`, 'error');
         continue;
       }
-
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(filePath);
-
-      await supabase.from('media_assets').insert({
-        filename: file.name,
-        file_type: type,
-        file_size: file.size,
-        mime_type: file.type,
-        storage_path: filePath,
-        public_url: publicUrl,
-        bucket,
-      });
     }
 
     setUploading(false);
-    setProgress(0);
     toast('Upload complete');
     load();
   };
 
   const remove = async () => {
     if (!deleteId) return;
-    const asset = assets.find((a) => a.id === deleteId);
-    if (asset) {
-      await supabase.storage.from(asset.bucket).remove([asset.storage_path]);
-      await supabase.from('media_assets').delete().eq('id', deleteId);
-    }
+    
+    await deleteDoc(doc(db, 'media_assets', deleteId));
     setDeleteId(null);
-    toast('Media deleted');
+    toast('Media deleted (reference removed)');
     load();
   };
 
@@ -124,7 +137,7 @@ export default function AdminMedia() {
           {uploading ? (
             <>
               <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mb-3" />
-              <p className="text-bone-400 text-sm">Uploading... {progress}%</p>
+              <p className="text-bone-400 text-sm">Uploading...</p>
             </>
           ) : (
             <>
@@ -190,7 +203,7 @@ export default function AdminMedia() {
                   <button onClick={() => copyUrl(asset.public_url)} className="p-1.5 rounded-lg hover:bg-ink-850 text-bone-400 hover:text-bone-100">
                     {copiedUrl === asset.public_url ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                   </button>
-                  <button onClick={() => setDeleteId(asset.id)} className="p-1.5 rounded-lg hover:bg-ink-850 text-bone-400 hover:text-red-400">
+                  <button onClick={() => setDeleteId(asset.id!)} className="p-1.5 rounded-lg hover:bg-ink-850 text-bone-400 hover:text-red-400">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
@@ -200,7 +213,7 @@ export default function AdminMedia() {
         </div>
       )}
 
-      <ConfirmDialog open={!!deleteId} title="Delete this media file?" message="This will permanently remove the file from storage. If it's used by a project or the hero, that content will show a broken image." onConfirm={remove} onCancel={() => setDeleteId(null)} />
+      <ConfirmDialog open={!!deleteId} title="Delete this media file?" message="This will permanently remove the file from your library. Note: Since we use Cloudinary for free storage, the file will remain on Cloudinary servers unless deleted via the Cloudinary dashboard." onConfirm={remove} onCancel={() => setDeleteId(null)} />
     </div>
   );
 }

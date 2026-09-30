@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FolderKanban, Briefcase, GraduationCap, Image, CheckCircle, Plus, ArrowRight } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, where, orderBy, limit, getCountFromServer } from 'firebase/firestore';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import { Card, LoadingSpinner } from './ui';
 
@@ -27,27 +28,25 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [projects, publishedProjects, career, education, media] = await Promise.all([
-        supabase.from('projects').select('*', { count: 'exact', head: true }),
-        supabase.from('projects').select('*', { count: 'exact', head: true }).eq('published', true),
-        supabase.from('career_entries').select('*', { count: 'exact', head: true }),
-        supabase.from('education_entries').select('*', { count: 'exact', head: true }),
-        supabase.from('media_assets').select('*', { count: 'exact', head: true }),
+      const [projectsSnap, publishedProjectsSnap, careerSnap, educationSnap, mediaSnap] = await Promise.all([
+        getCountFromServer(collection(db, 'projects')),
+        getCountFromServer(query(collection(db, 'projects'), where('published', '==', true))),
+        getCountFromServer(collection(db, 'career_entries')),
+        getCountFromServer(collection(db, 'education_entries')),
+        getCountFromServer(collection(db, 'media_assets')),
       ]);
 
       setStats({
-        projects: projects.count ?? 0,
-        publishedProjects: publishedProjects.count ?? 0,
-        career: career.count ?? 0,
-        education: education.count ?? 0,
-        media: media.count ?? 0,
+        projects: projectsSnap.data().count,
+        publishedProjects: publishedProjectsSnap.data().count,
+        career: careerSnap.data().count,
+        education: educationSnap.data().count,
+        media: mediaSnap.data().count,
       });
 
-      const { data: recent } = await supabase
-        .from('projects')
-        .select('id, title, updated_at, published')
-        .order('updated_at', { ascending: false })
-        .limit(5);
+      const recentQ = query(collection(db, 'projects'), orderBy('updated_at', 'desc'), limit(5));
+      const recentSnap = await getDocs(recentQ);
+      const recent = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRecentProjects((recent as RecentProject[]) ?? []);
 
       setLoading(false);

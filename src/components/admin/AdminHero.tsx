@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, updateDoc, doc, limit, query } from 'firebase/firestore';
 import type { HeroSettings } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Toggle, Button, LoadingSpinner } from './ui';
@@ -11,8 +12,14 @@ export default function AdminHero() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from('hero_settings').select('*').maybeSingle().then(({ data }) => {
-      setData(data as HeroSettings);
+    const q = query(collection(db, 'hero_settings'), limit(1));
+    getDocs(q).then((snapshot) => {
+      if (!snapshot.empty) {
+        const docSnap = snapshot.docs[0];
+        setData({ id: docSnap.id, ...docSnap.data() } as HeroSettings);
+      } else {
+        setData(null);
+      }
       setLoading(false);
     });
   }, []);
@@ -20,27 +27,31 @@ export default function AdminHero() {
   const save = async () => {
     if (!data) return;
     setSaving(true);
-    const { error } = await supabase.from('hero_settings').update({
-      hero_name: data.hero_name,
-      eyebrow_text: data.eyebrow_text,
-      main_title_line1: data.main_title_line1,
-      main_title_line2: data.main_title_line2,
-      description: data.description,
-      primary_button_text: data.primary_button_text,
-      primary_button_link: data.primary_button_link,
-      secondary_button_text: data.secondary_button_text,
-      secondary_button_link: data.secondary_button_link,
-      availability_text: data.availability_text,
-      background_type: data.background_type,
-      background_media_url: data.background_media_url,
-      background_video_autoplay: data.background_video_autoplay,
-      background_video_muted: data.background_video_muted,
-      background_video_loop: data.background_video_loop,
-      background_poster_url: data.background_poster_url,
-    }).eq('id', data.id);
-    setSaving(false);
-    if (error) toast('Failed to save hero settings', 'error');
-    else toast('Hero settings saved successfully');
+    try {
+      await updateDoc(doc(db, 'hero_settings', data.id), {
+        hero_name: data.hero_name,
+        eyebrow_text: data.eyebrow_text,
+        main_title_line1: data.main_title_line1,
+        main_title_line2: data.main_title_line2,
+        description: data.description,
+        primary_button_text: data.primary_button_text,
+        primary_button_link: data.primary_button_link,
+        secondary_button_text: data.secondary_button_text,
+        secondary_button_link: data.secondary_button_link,
+        availability_text: data.availability_text,
+        background_type: data.background_type,
+        background_media_url: data.background_media_url,
+        background_video_autoplay: data.background_video_autoplay,
+        background_video_muted: data.background_video_muted,
+        background_video_loop: data.background_video_loop,
+        background_poster_url: data.background_poster_url,
+      });
+      setSaving(false);
+      toast('Hero settings saved successfully');
+    } catch (error) {
+      setSaving(false);
+      toast('Failed to save hero settings', 'error');
+    }
   };
 
   if (loading || !data) return <LoadingSpinner />;

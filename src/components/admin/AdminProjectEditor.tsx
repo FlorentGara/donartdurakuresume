@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Video as VideoIcon, ArrowUp } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDoc, getDocs, query, where, orderBy, setDoc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { Project, ProjectCategory, ProjectMedia } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Select, Toggle, Button, LoadingSpinner } from './ui';
@@ -24,12 +25,17 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
 
   useEffect(() => {
     async function load() {
-      const { data: cats } = await supabase.from('project_categories').select('*').order('sort_order', { ascending: true });
+      const catsSnapshot = await getDocs(query(collection(db, 'project_categories'), orderBy('sort_order', 'asc')));
+      const cats = catsSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       setCategories((cats as ProjectCategory[]) ?? []);
 
       if (projectId) {
-        const { data: proj } = await supabase.from('projects').select('*').eq('id', projectId).maybeSingle();
-        const { data: med } = await supabase.from('project_media').select('*').eq('project_id', projectId).order('sort_order', { ascending: true });
+        const projDoc = await getDoc(doc(db, 'projects', projectId));
+        const proj = projDoc.exists() ? { id: projDoc.id, ...projDoc.data() } : null;
+        
+        const medSnapshot = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId), orderBy('sort_order', 'asc')));
+        const med = medSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        
         setProject(proj as Project);
         setMedia((med as ProjectMedia[]) ?? []);
       } else {
@@ -52,14 +58,17 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
       tools: project.tools ?? [],
       credits: project.credits ?? [],
     };
-    if (projectId) {
-      const { error } = await supabase.from('projects').update(payload).eq('id', projectId);
-      if (error) toast('Failed to save', 'error');
-      else toast('Project saved');
-    } else {
-      const { data, error } = await supabase.from('projects').insert(payload).select('id').single();
-      if (error) toast('Failed to create', 'error');
-      else { toast('Project created'); navigate(`/admin/projects/${data.id}`); }
+    try {
+      if (projectId) {
+        await updateDoc(doc(db, 'projects', projectId), payload);
+        toast('Project saved');
+      } else {
+        const docRef = await addDoc(collection(db, 'projects'), payload);
+        toast('Project created');
+        navigate(`/admin/projects/${docRef.id}`);
+      }
+    } catch (e) {
+      toast('Failed to save', 'error');
     }
     setSaving(false);
   };
@@ -74,16 +83,16 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
     if (pickerTarget === 'thumbnail') setProject({ ...project, thumbnail_url: url });
     else if (pickerTarget === 'video') setProject({ ...project, main_video_url: url });
     else if (pickerTarget === 'gallery' && projectId) {
-      supabase.from('project_media').insert({ project_id: projectId, media_type: 'image', media_url: url, sort_order: media.length })
+      addDoc(collection(db, 'project_media'), { project_id: projectId, media_type: 'image', media_url: url, sort_order: media.length })
         .then(() => {
-          supabase.from('project_media').select('*').eq('project_id', projectId).order('sort_order', { ascending: true })
-            .then(({ data }) => setMedia((data as ProjectMedia[]) ?? []));
+          getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId), orderBy('sort_order', 'asc')))
+            .then((snapshot) => setMedia(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[]));
         });
     }
   };
 
   const removeMedia = async (mid: string) => {
-    await supabase.from('project_media').delete().eq('id', mid);
+    await deleteDoc(doc(db, 'project_media', mid));
     setMedia(media.filter((m) => m.id !== mid));
     toast('Media removed');
   };
@@ -92,10 +101,10 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
     const idx = media.findIndex((m) => m.id === mid);
     const swap = media[idx + dir];
     if (!swap) return;
-    await supabase.from('project_media').update({ sort_order: swap.sort_order }).eq('id', mid);
-    await supabase.from('project_media').update({ sort_order: media[idx].sort_order }).eq('id', swap.id);
-    const { data } = await supabase.from('project_media').select('*').eq('project_id', projectId).order('sort_order', { ascending: true });
-    setMedia((data as ProjectMedia[]) ?? []);
+    await updateDoc(doc(db, 'project_media', mid), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'project_media', swap.id), { sort_order: media[idx].sort_order });
+    const snapshot = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId), orderBy('sort_order', 'asc')));
+    setMedia(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[]);
   };
 
   if (loading || !project) return <LoadingSpinner />;

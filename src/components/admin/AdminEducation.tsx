@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import type { EducationEntry } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Toggle, Button, LoadingSpinner, EmptyState, ConfirmDialog, StatusBadge } from './ui';
@@ -13,7 +14,9 @@ export default function AdminEducation() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('education_entries').select('*').order('sort_order', { ascending: true });
+    const q = query(collection(db, 'education_entries'), orderBy('sort_order', 'asc'));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setItems((data as EducationEntry[]) ?? []);
     setLoading(false);
   };
@@ -24,10 +27,10 @@ export default function AdminEducation() {
     if (!editing) return;
     const { id, ...payload } = editing;
     if (id) {
-      await supabase.from('education_entries').update(payload).eq('id', id);
+      await updateDoc(doc(db, 'education_entries', id), payload);
       toast('Education entry saved');
     } else {
-      await supabase.from('education_entries').insert({ ...payload, sort_order: items.length });
+      await addDoc(collection(db, 'education_entries'), { ...payload, sort_order: items.length });
       toast('Education entry created');
     }
     setEditing(null);
@@ -36,7 +39,7 @@ export default function AdminEducation() {
 
   const remove = async () => {
     if (!deleteId) return;
-    await supabase.from('education_entries').delete().eq('id', deleteId);
+    await deleteDoc(doc(db, 'education_entries', deleteId));
     setDeleteId(null);
     toast('Education entry deleted');
     load();
@@ -46,8 +49,8 @@ export default function AdminEducation() {
     const idx = items.findIndex((i) => i.id === id);
     const swap = items[idx + dir];
     if (!swap) return;
-    await supabase.from('education_entries').update({ sort_order: swap.sort_order }).eq('id', id);
-    await supabase.from('education_entries').update({ sort_order: items[idx].sort_order }).eq('id', swap.id);
+    await updateDoc(doc(db, 'education_entries', id), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'education_entries', swap.id), { sort_order: items[idx].sort_order });
     load();
   };
 

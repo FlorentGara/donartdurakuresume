@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Copy, Star, GripVertical, FolderPlus } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, query, where, orderBy, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import type { Project, ProjectCategory } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Button, LoadingSpinner, EmptyState, ConfirmDialog, StatusBadge } from './ui';
@@ -17,12 +18,12 @@ export default function AdminProjects() {
   const [newCat, setNewCat] = useState('');
 
   const load = async () => {
-    const [p, c] = await Promise.all([
-      supabase.from('projects').select('*').order('sort_order', { ascending: true }),
-      supabase.from('project_categories').select('*').order('sort_order', { ascending: true }),
+    const [pSnap, cSnap] = await Promise.all([
+      getDocs(query(collection(db, 'projects'), orderBy('sort_order', 'asc'))),
+      getDocs(query(collection(db, 'project_categories'), orderBy('sort_order', 'asc'))),
     ]);
-    setProjects((p.data as Project[]) ?? []);
-    setCategories((c.data as ProjectCategory[]) ?? []);
+    setProjects(pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Project[]);
+    setCategories(cSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectCategory[]);
     setLoading(false);
   };
 
@@ -30,8 +31,11 @@ export default function AdminProjects() {
 
   const remove = async () => {
     if (!deleteId) return;
-    await supabase.from('project_media').delete().eq('project_id', deleteId);
-    await supabase.from('projects').delete().eq('id', deleteId);
+    const mediaSnap = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', deleteId)));
+    for (const mDoc of mediaSnap.docs) {
+      await deleteDoc(doc(db, 'project_media', mDoc.id));
+    }
+    await deleteDoc(doc(db, 'projects', deleteId));
     setDeleteId(null);
     toast('Project deleted');
     load();
@@ -40,7 +44,7 @@ export default function AdminProjects() {
   const duplicate = async (p: Project) => {
     const rest = Object.fromEntries(Object.entries(p).filter(([key]) =>
       !['id', 'created_at', 'updated_at'].includes(key)));
-    await supabase.from('projects').insert({
+    await addDoc(collection(db, 'projects'), {
       ...rest,
       title: `${p.title} (Copy)`,
       slug: `${p.slug}-copy`,
@@ -52,13 +56,13 @@ export default function AdminProjects() {
   };
 
   const togglePublished = async (p: Project) => {
-    await supabase.from('projects').update({ published: !p.published }).eq('id', p.id);
+    await updateDoc(doc(db, 'projects', p.id), { published: !p.published });
     toast(p.published ? 'Project unpublished' : 'Project published');
     load();
   };
 
   const toggleFeatured = async (p: Project) => {
-    await supabase.from('projects').update({ featured: !p.featured }).eq('id', p.id);
+    await updateDoc(doc(db, 'projects', p.id), { featured: !p.featured });
     load();
   };
 
@@ -66,24 +70,30 @@ export default function AdminProjects() {
     const idx = projects.findIndex((i) => i.id === id);
     const swap = projects[idx + dir];
     if (!swap) return;
-    await supabase.from('projects').update({ sort_order: swap.sort_order }).eq('id', id);
-    await supabase.from('projects').update({ sort_order: projects[idx].sort_order }).eq('id', swap.id);
+    await updateDoc(doc(db, 'projects', id), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'projects', swap.id), { sort_order: projects[idx].sort_order });
     load();
   };
 
   const addCategory = async () => {
     if (!newCat.trim()) return;
     const slug = newCat.toLowerCase().replace(/\s+/g, '-');
-    const { error } = await supabase.from('project_categories').insert({ name: newCat, slug, sort_order: categories.length });
-    if (error) { toast('Failed to add category', 'error'); return; }
-    setNewCat('');
-    toast('Category added');
-    load();
+    try {
+      await addDoc(collection(db, 'project_categories'), { name: newCat, slug, sort_order: categories.length });
+      setNewCat('');
+      toast('Category added');
+      load();
+    } catch (error) {
+      toast('Failed to add category', 'error');
+    }
   };
 
   const deleteCategory = async (id: string) => {
-    await supabase.from('projects').update({ category_id: null, category_name: 'Other' }).eq('category_id', id);
-    await supabase.from('project_categories').delete().eq('id', id);
+    const projSnap = await getDocs(query(collection(db, 'projects'), where('category_id', '==', id)));
+    for (const pDoc of projSnap.docs) {
+      await updateDoc(doc(db, 'projects', pDoc.id), { category_id: null, category_name: 'Other' });
+    }
+    await deleteDoc(doc(db, 'project_categories', id));
     toast('Category deleted');
     load();
   };

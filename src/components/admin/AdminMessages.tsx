@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Mail, MailOpen, Archive, Trash2, ArrowLeft } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { ContactMessage } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Button, LoadingSpinner, EmptyState, ConfirmDialog } from './ui';
@@ -14,7 +15,9 @@ export default function AdminMessages() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
+    const q = query(collection(db, 'contact_messages'), orderBy('created_at', 'desc'));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setMessages((data as ContactMessage[]) ?? []);
     setLoading(false);
   };
@@ -24,13 +27,15 @@ export default function AdminMessages() {
   const openMessage = async (msg: ContactMessage) => {
     setSelected(msg);
     if (!msg.is_read) {
-      await supabase.from('contact_messages').update({ is_read: true, status: 'read' }).eq('id', msg.id);
-      load();
+      if (msg.id) {
+        await updateDoc(doc(db, 'contact_messages', msg.id), { is_read: true, status: 'read' });
+        load();
+      }
     }
   };
 
   const archive = async (id: string) => {
-    await supabase.from('contact_messages').update({ status: 'archived' }).eq('id', id);
+    await updateDoc(doc(db, 'contact_messages', id), { status: 'archived' });
     toast('Message archived');
     setSelected(null);
     load();
@@ -38,7 +43,7 @@ export default function AdminMessages() {
 
   const remove = async () => {
     if (!deleteId) return;
-    await supabase.from('contact_messages').delete().eq('id', deleteId);
+    await deleteDoc(doc(db, 'contact_messages', deleteId));
     setDeleteId(null);
     setSelected(null);
     toast('Message deleted');
@@ -66,8 +71,8 @@ export default function AdminMessages() {
             <div><span className="text-label">Message</span><p className="text-bone-200 mt-1 whitespace-pre-wrap leading-relaxed">{selected.message}</p></div>
           </div>
           <div className="flex gap-3 mt-8 pt-6 border-t hairline">
-            <Button variant="ghost" onClick={() => archive(selected.id)}><Archive className="w-4 h-4 mr-2" />Archive</Button>
-            <Button variant="danger" onClick={() => setDeleteId(selected.id)}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
+            <Button variant="ghost" onClick={() => { if (selected.id) archive(selected.id); }}><Archive className="w-4 h-4 mr-2" />Archive</Button>
+            <Button variant="danger" onClick={() => setDeleteId(selected.id || null)}><Trash2 className="w-4 h-4 mr-2" />Delete</Button>
           </div>
         </Card>
         <ConfirmDialog open={!!deleteId} title="Delete this message?" message="This action cannot be undone." onConfirm={remove} onCancel={() => setDeleteId(null)} />

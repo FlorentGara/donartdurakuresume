@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, doc, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { Service } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Toggle, Button, LoadingSpinner, EmptyState, ConfirmDialog, StatusBadge } from './ui';
@@ -13,8 +14,8 @@ export default function AdminServices() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('services').select('*').order('sort_order', { ascending: true });
-    setItems((data as Service[]) ?? []);
+    const snapshot = await getDocs(query(collection(db, 'services'), orderBy('sort_order', 'asc')));
+    setItems(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Service[]);
     setLoading(false);
   };
 
@@ -23,12 +24,16 @@ export default function AdminServices() {
   const save = async () => {
     if (!editing) return;
     const { id, ...payload } = editing;
-    if (id) {
-      await supabase.from('services').update(payload).eq('id', id);
-      toast('Service saved');
-    } else {
-      await supabase.from('services').insert({ ...payload, sort_order: items.length });
-      toast('Service created');
+    try {
+      if (id) {
+        await updateDoc(doc(db, 'services', id), payload);
+        toast('Service saved');
+      } else {
+        await addDoc(collection(db, 'services'), { ...payload, sort_order: items.length });
+        toast('Service created');
+      }
+    } catch (e) {
+      toast('Failed to save service', 'error');
     }
     setEditing(null);
     load();
@@ -36,7 +41,7 @@ export default function AdminServices() {
 
   const remove = async () => {
     if (!deleteId) return;
-    await supabase.from('services').delete().eq('id', deleteId);
+    await deleteDoc(doc(db, 'services', deleteId));
     setDeleteId(null);
     toast('Service deleted');
     load();
@@ -46,8 +51,8 @@ export default function AdminServices() {
     const idx = items.findIndex((i) => i.id === id);
     const swap = items[idx + dir];
     if (!swap) return;
-    await supabase.from('services').update({ sort_order: swap.sort_order }).eq('id', id);
-    await supabase.from('services').update({ sort_order: items[idx].sort_order }).eq('id', swap.id);
+    await updateDoc(doc(db, 'services', id), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'services', swap.id), { sort_order: items[idx].sort_order });
     load();
   };
 

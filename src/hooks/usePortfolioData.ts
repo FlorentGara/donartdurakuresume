@@ -1,25 +1,27 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { collection, getDocs, query, where, orderBy as firestoreOrderBy, limit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import type {
   Profile, HeroSettings, CareerEntry, EducationEntry,
   Project, ProjectMedia, Service, Skill, ProcessStep,
   SocialLink, SiteSettings, ProjectCategory,
 } from '@/lib/types';
 
-async function fetchSingle<T>(table: string): Promise<T | null> {
-  const { data, error } = await supabase.from(table).select('*').maybeSingle();
-  if (error) return null;
-  return data as T;
+async function fetchSingle<T>(tableName: string): Promise<T | null> {
+  const q = query(collection(db, tableName), limit(1));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return null;
+  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as T;
 }
 
-async function fetchMany<T>(table: string, orderBy = 'sort_order'): Promise<T[]> {
-  const { data, error } = await supabase
-    .from(table)
-    .select('*')
-    .eq('published', true)
-    .order(orderBy, { ascending: true });
-  if (error || !data) return [];
-  return data as T[];
+async function fetchMany<T>(tableName: string, orderByField = 'sort_order'): Promise<T[]> {
+  const q = query(
+    collection(db, tableName),
+    where('published', '==', true),
+    firestoreOrderBy(orderByField, 'asc')
+  );
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as T);
 }
 
 export function usePortfolioData() {
@@ -52,12 +54,12 @@ export function usePortfolioData() {
           fetchSingle<HeroSettings>('hero_settings'),
           fetchMany<CareerEntry>('career_entries'),
           fetchMany<EducationEntry>('education_entries'),
-          supabase.from('projects').select('*').eq('published', true).order('sort_order', { ascending: true }).then(({ data }) => data as Project[] ?? []),
-          supabase.from('project_categories').select('*').order('sort_order', { ascending: true }).then(({ data }) => data as ProjectCategory[] ?? []),
+          getDocs(query(collection(db, 'projects'), where('published', '==', true), firestoreOrderBy('sort_order', 'asc'))).then(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Project)),
+          getDocs(query(collection(db, 'project_categories'), firestoreOrderBy('sort_order', 'asc'))).then(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as ProjectCategory)),
           fetchMany<Service>('services'),
           fetchMany<Skill>('skills'),
           fetchMany<ProcessStep>('process_steps'),
-          supabase.from('social_links').select('*').eq('enabled', true).order('sort_order', { ascending: true }).then(({ data }) => data as SocialLink[] ?? []),
+          getDocs(query(collection(db, 'social_links'), where('enabled', '==', true), firestoreOrderBy('sort_order', 'asc'))).then(snap => snap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as SocialLink)),
           fetchSingle<SiteSettings>('site_settings'),
         ]);
 
@@ -78,22 +80,24 @@ export function usePortfolioData() {
         // Fetch media for all projects
         if (pr && pr.length > 0) {
           const projectIds = pr.map((p) => p.id);
-          const { data: mediaData } = await supabase
-            .from('project_media')
-            .select('*')
-            .in('project_id', projectIds)
-            .order('sort_order', { ascending: true });
+          // Firestore doesn't support 'in' queries with more than 10 elements easily, but for simplicity here:
+          // In a real app we'd chunk it. We'll just fetch all media or use multiple queries.
+          const { docs: mediaDocs } = await getDocs(collection(db, 'project_media'));
+          const mediaData = mediaDocs.map(d => ({ id: d.id, ...d.data() }) as ProjectMedia).filter(m => projectIds.includes(m.project_id));
+          // sorting by sort_order
+          mediaData.sort((a, b) => a.sort_order - b.sort_order);
 
           if (!cancelled && mediaData) {
             const mediaMap: Record<string, ProjectMedia[]> = {};
-            for (const m of mediaData as ProjectMedia[]) {
+            for (const m of mediaData) {
               if (!mediaMap[m.project_id]) mediaMap[m.project_id] = [];
               mediaMap[m.project_id].push(m);
             }
             setProjectMedia(mediaMap);
           }
         }
-      } catch {
+      } catch (err) {
+        console.error(err);
         if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setLoading(false);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import type { SocialLink } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Toggle, Button, LoadingSpinner, EmptyState, ConfirmDialog } from './ui';
@@ -12,27 +13,28 @@ export default function AdminSocial() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('social_links').select('*').order('sort_order', { ascending: true });
-    setItems((data as SocialLink[]) ?? []);
+    const snapshot = await getDocs(query(collection(db, 'social_links'), orderBy('sort_order', 'asc')));
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as SocialLink[];
+    setItems(data);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
   const save = async (item: SocialLink) => {
-    await supabase.from('social_links').update({ label: item.label, url: item.url, enabled: item.enabled }).eq('id', item.id);
+    await updateDoc(doc(db, 'social_links', item.id), { label: item.label, url: item.url, enabled: item.enabled });
     toast('Social link saved');
   };
 
   const add = async () => {
-    await supabase.from('social_links').insert({ label: 'New Link', url: '', enabled: true, sort_order: items.length });
+    await addDoc(collection(db, 'social_links'), { label: 'New Link', url: '', enabled: true, sort_order: items.length });
     toast('Social link added');
     load();
   };
 
   const remove = async () => {
     if (!deleteId) return;
-    await supabase.from('social_links').delete().eq('id', deleteId);
+    await deleteDoc(doc(db, 'social_links', deleteId));
     setDeleteId(null);
     toast('Social link deleted');
     load();
@@ -42,8 +44,8 @@ export default function AdminSocial() {
     const idx = items.findIndex((i) => i.id === id);
     const swap = items[idx + dir];
     if (!swap) return;
-    await supabase.from('social_links').update({ sort_order: swap.sort_order }).eq('id', id);
-    await supabase.from('social_links').update({ sort_order: items[idx].sort_order }).eq('id', swap.id);
+    await updateDoc(doc(db, 'social_links', id), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'social_links', swap.id), { sort_order: items[idx].sort_order });
     load();
   };
 

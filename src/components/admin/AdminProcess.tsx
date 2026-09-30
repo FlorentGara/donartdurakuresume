@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, doc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { ProcessStep } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Toggle, Button, LoadingSpinner, EmptyState, ConfirmDialog, StatusBadge } from './ui';
@@ -13,7 +14,9 @@ export default function AdminProcess() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('process_steps').select('*').order('sort_order', { ascending: true });
+    const q = query(collection(db, 'process_steps'), orderBy('sort_order', 'asc'));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setItems((data as ProcessStep[]) ?? []);
     setLoading(false);
   };
@@ -24,10 +27,10 @@ export default function AdminProcess() {
     if (!editing) return;
     const { id, ...payload } = editing;
     if (id) {
-      await supabase.from('process_steps').update(payload).eq('id', id);
+      await updateDoc(doc(db, 'process_steps', id), payload as any);
       toast('Process step saved');
     } else {
-      await supabase.from('process_steps').insert({ ...payload, sort_order: items.length });
+      await addDoc(collection(db, 'process_steps'), { ...payload, sort_order: items.length });
       toast('Process step created');
     }
     setEditing(null);
@@ -36,7 +39,7 @@ export default function AdminProcess() {
 
   const remove = async () => {
     if (!deleteId) return;
-    await supabase.from('process_steps').delete().eq('id', deleteId);
+    await deleteDoc(doc(db, 'process_steps', deleteId));
     setDeleteId(null);
     toast('Process step deleted');
     load();
@@ -45,9 +48,9 @@ export default function AdminProcess() {
   const move = async (id: string, dir: -1 | 1) => {
     const idx = items.findIndex((i) => i.id === id);
     const swap = items[idx + dir];
-    if (!swap) return;
-    await supabase.from('process_steps').update({ sort_order: swap.sort_order }).eq('id', id);
-    await supabase.from('process_steps').update({ sort_order: items[idx].sort_order }).eq('id', swap.id);
+    if (!swap || !swap.id) return;
+    await updateDoc(doc(db, 'process_steps', id), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'process_steps', swap.id), { sort_order: items[idx].sort_order });
     load();
   };
 
@@ -75,7 +78,7 @@ export default function AdminProcess() {
           {items.map((item, i) => (
             <Card key={item.id}>
               <div className="flex items-start gap-4">
-                <button onClick={() => move(item.id, -1)} disabled={i === 0} className="text-bone-600 hover:text-bone-100 disabled:opacity-30 pt-1"><GripVertical className="w-4 h-4" /></button>
+                <button onClick={() => move(item.id!, -1)} disabled={i === 0} className="text-bone-600 hover:text-bone-100 disabled:opacity-30 pt-1"><GripVertical className="w-4 h-4" /></button>
                 <div className="font-mono text-accent/40 text-lg w-10 shrink-0">{item.number}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-1"><h3 className="text-bone-100 font-medium">{item.title}</h3><StatusBadge published={item.published} /></div>
@@ -83,7 +86,7 @@ export default function AdminProcess() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setEditing(item)} className="p-2 rounded-lg hover:bg-ink-850 text-bone-400 hover:text-bone-100"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => setDeleteId(item.id)} className="p-2 rounded-lg hover:bg-ink-850 text-bone-400 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => setDeleteId(item.id!)} className="p-2 rounded-lg hover:bg-ink-850 text-bone-400 hover:text-red-400"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
             </Card>

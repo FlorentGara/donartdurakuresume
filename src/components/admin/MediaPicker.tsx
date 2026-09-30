@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X, Link2, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
 import type { MediaAsset } from '@/lib/types';
 
 interface MediaPickerProps {
@@ -20,12 +21,17 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    let query = supabase.from('media_assets').select('*').order('created_at', { ascending: false });
-    if (filter !== 'all') query = query.eq('file_type', filter);
-    query.then(({ data }) => {
-      setAssets((data as MediaAsset[]) ?? []);
+    async function fetchAssets() {
+      let q = query(collection(db, 'media_assets'), orderBy('created_at', 'desc'));
+      if (filter !== 'all') {
+        q = query(collection(db, 'media_assets'), where('file_type', '==', filter), orderBy('created_at', 'desc'));
+      }
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MediaAsset[];
+      setAssets(data);
       setLoading(false);
-    });
+    }
+    fetchAssets();
   }, [open, filter]);
 
   if (!open) return null;

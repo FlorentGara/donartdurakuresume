@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import type { Profile } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Button, LoadingSpinner } from './ui';
@@ -11,8 +12,10 @@ export default function AdminProfile() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from('profiles').select('*').maybeSingle().then(({ data }) => {
-      setData(data as Profile);
+    getDocs(collection(db, 'profiles')).then((snapshot) => {
+      if (!snapshot.empty) {
+        setData({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Profile);
+      }
       setLoading(false);
     });
   }, []);
@@ -20,23 +23,27 @@ export default function AdminProfile() {
   const save = async () => {
     if (!data) return;
     setSaving(true);
-    const { error } = await supabase.from('profiles').update({
-      full_name: data.full_name,
-      professional_title: data.professional_title,
-      hero_statement: data.hero_statement,
-      hero_description: data.hero_description,
-      about_heading: data.about_heading,
-      about_description: data.about_description,
-      location: data.location,
-      experience: data.experience,
-      availability_status: data.availability_status,
-      email: data.email,
-      profile_image_url: data.profile_image_url,
-      cv_url: data.cv_url,
-    }).eq('id', data.id);
-    setSaving(false);
-    if (error) toast('Failed to save profile', 'error');
-    else toast('Profile saved successfully');
+    try {
+      await updateDoc(doc(db, 'profiles', data.id), {
+        full_name: data.full_name,
+        professional_title: data.professional_title,
+        hero_statement: data.hero_statement,
+        hero_description: data.hero_description,
+        about_heading: data.about_heading,
+        about_description: data.about_description,
+        location: data.location,
+        experience: data.experience,
+        availability_status: data.availability_status,
+        email: data.email,
+        profile_image_url: data.profile_image_url,
+        cv_url: data.cv_url,
+      });
+      toast('Profile saved successfully');
+    } catch (error) {
+      toast('Failed to save profile', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading || !data) return <LoadingSpinner />;

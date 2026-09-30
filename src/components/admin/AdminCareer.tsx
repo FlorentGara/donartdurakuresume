@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import type { CareerEntry } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Toggle, Button, LoadingSpinner, EmptyState, ConfirmDialog, StatusBadge } from './ui';
@@ -13,7 +14,9 @@ export default function AdminCareer() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const load = async () => {
-    const { data } = await supabase.from('career_entries').select('*').order('sort_order', { ascending: true });
+    const q = query(collection(db, 'career_entries'), orderBy('sort_order', 'asc'));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     setItems((data as CareerEntry[]) ?? []);
     setLoading(false);
   };
@@ -23,14 +26,17 @@ export default function AdminCareer() {
   const save = async () => {
     if (!editing) return;
     const { id, ...payload } = editing;
-    if (id) {
-      const { error } = await supabase.from('career_entries').update(payload).eq('id', id);
-      if (error) { toast('Failed to save', 'error'); return; }
-      toast('Career entry saved');
-    } else {
-      const { error } = await supabase.from('career_entries').insert({ ...payload, sort_order: items.length });
-      if (error) { toast('Failed to create', 'error'); return; }
-      toast('Career entry created');
+    try {
+      if (id) {
+        await updateDoc(doc(db, 'career_entries', id), payload);
+        toast('Career entry saved');
+      } else {
+        await addDoc(collection(db, 'career_entries'), { ...payload, sort_order: items.length });
+        toast('Career entry created');
+      }
+    } catch (error) {
+      toast(id ? 'Failed to save' : 'Failed to create', 'error');
+      return;
     }
     setEditing(null);
     load();
@@ -38,10 +44,14 @@ export default function AdminCareer() {
 
   const remove = async () => {
     if (!deleteId) return;
-    const { error } = await supabase.from('career_entries').delete().eq('id', deleteId);
-    setDeleteId(null);
-    if (error) toast('Failed to delete', 'error');
-    else toast('Career entry deleted');
+    try {
+      await deleteDoc(doc(db, 'career_entries', deleteId));
+      setDeleteId(null);
+      toast('Career entry deleted');
+    } catch (error) {
+      setDeleteId(null);
+      toast('Failed to delete', 'error');
+    }
     load();
   };
 
@@ -49,8 +59,8 @@ export default function AdminCareer() {
     const idx = items.findIndex((i) => i.id === id);
     const swap = items[idx + dir];
     if (!swap) return;
-    await supabase.from('career_entries').update({ sort_order: swap.sort_order }).eq('id', id);
-    await supabase.from('career_entries').update({ sort_order: items[idx].sort_order }).eq('id', swap.id);
+    await updateDoc(doc(db, 'career_entries', id), { sort_order: swap.sort_order });
+    await updateDoc(doc(db, 'career_entries', swap.id), { sort_order: items[idx].sort_order });
     load();
   };
 

@@ -1,9 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import type { User } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 interface AuthContextValue {
-  session: Session | null;
+  session: any | null; // For compatibility
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -14,56 +16,79 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<any | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    const verifySession = async (nextSession: Session | null) => {
-      if (!nextSession) {
-        if (active) { setSession(null); setLoading(false); }
+
+    const listener = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!active) return;
+      if (!firebaseUser) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
         return;
       }
-      if (active) setLoading(true);
-      const { data, error } = await supabase.rpc('is_admin');
-      if (active) {
-        setSession(!error && data === true ? nextSession : null);
-        setLoading(false);
+      setLoading(true);
+      // Check if user is admin
+      try {
+        const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+        if (active) {
+          if (adminDoc.exists()) {
+            setUser(firebaseUser);
+            setSession({ user: firebaseUser }); // mock session for compatibility
+          } else {
+            setUser(null);
+            setSession(null);
+          }
+          setLoading(false);
+        }
+      } catch (err) {
+        if (active) {
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+        }
       }
-    };
-
-    supabase.auth.getSession().then(({ data }) => { void verifySession(data.session); });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      void verifySession(session);
     });
 
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    return () => { active = false; listener(); };
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    const { data: isAdmin, error: accessError } = await supabase.rpc('is_admin');
-    if (accessError || isAdmin !== true) {
-      await supabase.auth.signOut();
-      return { error: accessError ? 'Could not verify admin access. Check the database setup.' : 'This account is not a dashboard administrator.' };
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // check admin access
+      const adminDoc = await getDoc(doc(db, 'admins', userCredential.user.uid));
+      if (!adminDoc.exists()) {
+        await firebaseSignOut(auth);
+        return { error: 'This account is not a dashboard administrator.' };
+      }
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
     }
-    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
     setSession(null);
+    setUser(null);
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    return { error: error?.message ?? null };
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message };
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, signIn, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ session, user, loading, signIn, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
