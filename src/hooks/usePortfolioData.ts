@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import publishedPortfolio from '@/data/publishedPortfolio.json';
+import { defaultSiteCopy } from '@/lib/site-copy';
 import type {
   Profile, HeroSettings, CareerEntry, EducationEntry,
   Project, ProjectMedia, Service, Skill, ProcessStep,
-  SocialLink, SiteSettings, ProjectCategory,
+  SocialLink, SiteSettings, SeoSettings, ProjectCategory,
 } from '@/lib/types';
 
 async function fetchSingle<T>(tableName: string): Promise<T | null> {
@@ -21,12 +22,16 @@ async function fetchSingle<T>(tableName: string): Promise<T | null> {
 
 async function fetchMany<T>(tableName: string, orderByField = 'sort_order'): Promise<T[]> {
   try {
-    const snapshot = await getDocs(collection(db, tableName));
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as any);
-    // Client-side filter and sort to avoid Firebase composite index requirement
-    return data
-      .filter((d: any) => d.published === true || d.enabled === true || (d.published === undefined && d.enabled === undefined))
-      .sort((a: any, b: any) => (a[orderByField] ?? 0) - (b[orderByField] ?? 0)) as T[];
+    const source = collection(db, tableName);
+    const filtered = tableName === 'project_categories'
+      ? source
+      : query(source, where(tableName === 'social_links' ? 'enabled' : 'published', '==', true));
+    const snapshot = await getDocs(filtered);
+    const data = snapshot.docs.map(item => ({ id: item.id, ...item.data() })) as unknown as (T & { sort_order?: number })[];
+    // Sort in the browser so no composite Firestore index is required.
+    return data.sort((a, b) =>
+      Number((a as Record<string, unknown>)[orderByField] ?? 0) -
+      Number((b as Record<string, unknown>)[orderByField] ?? 0));
   } catch (err) {
     console.error(`Error fetching ${tableName}:`, err);
     return [];
@@ -49,6 +54,7 @@ export function usePortfolioData() {
   const [processSteps, setProcessSteps] = useState<ProcessStep[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [seoSettings, setSeoSettings] = useState<SeoSettings | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +64,7 @@ export function usePortfolioData() {
       setError(false);
 
       try {
-        const [p, h, c, e, pr, cats, sv, sk, ps, sl, ss] = await Promise.all([
+        const [p, h, c, e, pr, cats, sv, sk, ps, sl, ss, seo] = await Promise.all([
           fetchSingle<Profile>('profiles'),
           fetchSingle<HeroSettings>('hero_settings'),
           fetchMany<CareerEntry>('career_entries'),
@@ -70,6 +76,7 @@ export function usePortfolioData() {
           fetchMany<ProcessStep>('process_steps'),
           fetchMany<SocialLink>('social_links'),
           fetchSingle<SiteSettings>('site_settings'),
+          fetchSingle<SeoSettings>('seo_settings'),
         ]);
 
         if (cancelled) return;
@@ -106,6 +113,7 @@ export function usePortfolioData() {
         setProcessSteps(ps);
         setSocialLinks(sl);
         setSiteSettings(ss);
+        setSeoSettings(seo);
 
         // Fetch media for all projects
         if (pr && pr.length > 0) {
@@ -156,5 +164,7 @@ export function usePortfolioData() {
     processSteps,
     socialLinks,
     siteSettings,
+    seoSettings,
+    copy: { ...defaultSiteCopy, ...siteSettings?.copy },
   };
 }

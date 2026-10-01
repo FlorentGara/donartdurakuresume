@@ -4,6 +4,7 @@ import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import type { Profile } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Button, LoadingSpinner } from './ui';
+import MediaUrlField from './MediaUrlField';
 
 export default function AdminProfile() {
   const toast = useToast();
@@ -39,7 +40,7 @@ export default function AdminProfile() {
         cv_url: data.cv_url,
       });
       toast('Profile saved successfully');
-    } catch (error) {
+    } catch {
       toast('Failed to save profile', 'error');
     } finally {
       setSaving(false);
@@ -66,8 +67,8 @@ export default function AdminProfile() {
         <Card><Input label="Experience" value={data.experience} onChange={(v) => setData({ ...data, experience: v })} /></Card>
         <Card><Input label="Availability Status" value={data.availability_status} onChange={(v) => setData({ ...data, availability_status: v })} /></Card>
         <Card><Input label="Email" value={data.email} onChange={(v) => setData({ ...data, email: v })} /></Card>
-        <Card><Input label="Profile Image URL" value={data.profile_image_url ?? ''} onChange={(v) => setData({ ...data, profile_image_url: v })} placeholder="https://..." /></Card>
-        <Card><Input label="CV/Resume URL" value={data.cv_url ?? ''} onChange={(v) => setData({ ...data, cv_url: v })} placeholder="https://..." /></Card>
+        <Card><MediaUrlField label="Profile Image" value={data.profile_image_url} onChange={(v) => setData({ ...data, profile_image_url: v })} filter="image" /></Card>
+        <Card><MediaUrlField label="CV/Resume" value={data.cv_url} onChange={(v) => setData({ ...data, cv_url: v })} /></Card>
       </div>
       {data.profile_image_url && (
         <div className="mt-6">

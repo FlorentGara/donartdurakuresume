@@ -4,6 +4,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, limit, getCountFromServer } from 'firebase/firestore';
 import { useHashRoute } from '@/hooks/useHashRoute';
 import { Card, LoadingSpinner } from './ui';
+import { hasEditablePortfolio, importPublishedPortfolio } from '@/lib/importPublishedPortfolio';
 
 interface Stats {
   projects: number;
@@ -25,6 +26,9 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [canImport, setCanImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -49,12 +53,26 @@ export default function AdminDashboard() {
       const recent = recentSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRecentProjects((recent as RecentProject[]) ?? []);
 
+      setCanImport(!(await hasEditablePortfolio()));
+
       setLoading(false);
     }
     load();
   }, []);
 
   if (loading || !stats) return <LoadingSpinner />;
+
+  const restoreContent = async () => {
+    setImporting(true);
+    setImportError('');
+    try {
+      await importPublishedPortfolio();
+      window.location.reload();
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Could not import the portfolio.');
+      setImporting(false);
+    }
+  };
 
   const statCards = [
     { label: 'Total Projects', value: stats.projects, icon: FolderKanban, color: 'text-accent' },
@@ -77,6 +95,20 @@ export default function AdminDashboard() {
         <h1 className="text-display text-3xl text-bone-50">Welcome back, Donart</h1>
         <p className="text-bone-400 mt-1">Here's an overview of your portfolio.</p>
       </div>
+
+      {canImport && (
+        <Card className="mb-8 border-accent/40">
+          <h2 className="text-bone-50 text-lg font-medium">Make your portfolio editable</h2>
+          <p className="text-bone-300 text-sm mt-2">
+            Your published site has content, but this dashboard's database is empty. Import the saved
+            portfolio to edit its text, projects, and settings here. Existing work will never be overwritten.
+          </p>
+          {importError && <p className="text-red-400 text-sm mt-3">{importError}</p>}
+          <button onClick={restoreContent} disabled={importing} className="btn-primary mt-5 disabled:opacity-50">
+            {importing ? 'Importing...' : 'Import published portfolio'}
+          </button>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">

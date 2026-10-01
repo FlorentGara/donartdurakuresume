@@ -1,3 +1,5 @@
+import type { SiteCopy } from './site-copy';
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -159,6 +161,7 @@ export interface SiteSettings {
   accent_color: string;
   contact_email: string;
   availability_status: string;
+  copy?: Partial<SiteCopy>;
 }
 
 export interface SeoSettings {
@@ -192,6 +195,8 @@ export interface MediaAsset {
   mime_type: string | null;
   storage_path: string;
   public_url: string;
+  cloudinary_public_id?: string;
+  cloudinary_resource_type?: string;
   bucket: string;
   width: number | null;
   height: number | null;

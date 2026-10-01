@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Video as VideoIcon, ArrowUp } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, query, where, orderBy, setDoc, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, orderBy, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { Project, ProjectCategory, ProjectMedia } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Select, Toggle, Button, LoadingSpinner } from './ui';
@@ -31,10 +31,11 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
 
       if (projectId) {
         const projDoc = await getDoc(doc(db, 'projects', projectId));
-        const proj = projDoc.exists() ? { id: projDoc.id, ...projDoc.data() } : null;
+        const proj = projDoc.exists() ? { ...projDoc.data(), id: projDoc.id } : null;
         
-        const medSnapshot = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId), orderBy('sort_order', 'asc')));
-        const med = medSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        const medSnapshot = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId)));
+        const med = (medSnapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[])
+          .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0));
         
         setProject(proj as Project);
         setMedia((med as ProjectMedia[]) ?? []);
@@ -53,10 +54,13 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
   const save = async () => {
     if (!project) return;
     setSaving(true);
+    const now = new Date().toISOString();
     const payload = {
-      ...project,
+      ...Object.fromEntries(Object.entries(project).filter(([key]) => key !== 'id')),
       tools: project.tools ?? [],
       credits: project.credits ?? [],
+      updated_at: now,
+      ...(!projectId ? { created_at: now } : {}),
     };
     try {
       if (projectId) {
@@ -67,7 +71,7 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
         toast('Project created');
         navigate(`/admin/projects/${docRef.id}`);
       }
-    } catch (e) {
+    } catch {
       toast('Failed to save', 'error');
     }
     setSaving(false);
@@ -78,15 +82,16 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
     setPickerOpen(true);
   };
 
-  const onPick = (url: string) => {
+  const onPick = (url: string, type: 'image' | 'video' | 'document') => {
     if (!project) return;
     if (pickerTarget === 'thumbnail') setProject({ ...project, thumbnail_url: url });
     else if (pickerTarget === 'video') setProject({ ...project, main_video_url: url });
     else if (pickerTarget === 'gallery' && projectId) {
-      addDoc(collection(db, 'project_media'), { project_id: projectId, media_type: 'image', media_url: url, sort_order: media.length })
+      addDoc(collection(db, 'project_media'), { project_id: projectId, media_type: type === 'video' ? 'video' : 'image', media_url: url, sort_order: media.length })
         .then(() => {
-          getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId), orderBy('sort_order', 'asc')))
-            .then((snapshot) => setMedia(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[]));
+          getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId)))
+            .then((snapshot) => setMedia((snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[])
+              .sort((a, b) => a.sort_order - b.sort_order)));
         });
     }
   };
@@ -103,8 +108,9 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
     if (!swap) return;
     await updateDoc(doc(db, 'project_media', mid), { sort_order: swap.sort_order });
     await updateDoc(doc(db, 'project_media', swap.id), { sort_order: media[idx].sort_order });
-    const snapshot = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId), orderBy('sort_order', 'asc')));
-    setMedia(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[]);
+    const snapshot = await getDocs(query(collection(db, 'project_media'), where('project_id', '==', projectId)));
+    setMedia((snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectMedia[])
+      .sort((a, b) => a.sort_order - b.sort_order));
   };
 
   if (loading || !project) return <LoadingSpinner />;
@@ -127,7 +133,7 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
         <Card>
           <Select
             label="Category"
-            value={project.category_id ?? ''}
+            value={project.category_id ?? categories.find((category) => category.name === project.category_name)?.id ?? ''}
             onChange={(v) => {
               const cat = categories.find((c) => c.id === v);
               setProject({ ...project, category_id: v || null, category_name: cat?.name ?? 'Other' });
@@ -156,7 +162,7 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
           {project.thumbnail_url ? (
             <div className="relative group">
               <img src={project.thumbnail_url} alt="" className="w-full aspect-video object-cover rounded-xl" />
-              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 right-3 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <button onClick={() => openPicker('thumbnail')} className="p-2 rounded-lg glass text-bone-100"><ImageIcon className="w-4 h-4" /></button>
                 <button onClick={() => setProject({ ...project, thumbnail_url: null })} className="p-2 rounded-lg glass text-red-400"><Trash2 className="w-4 h-4" /></button>
               </div>
@@ -177,7 +183,7 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
           {project.main_video_url ? (
             <div className="relative group">
               <video src={project.main_video_url} controls className="w-full aspect-video object-cover rounded-xl" />
-              <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-3 right-3 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <button onClick={() => openPicker('video')} className="p-2 rounded-lg glass text-bone-100"><VideoIcon className="w-4 h-4" /></button>
                 <button onClick={() => setProject({ ...project, main_video_url: null })} className="p-2 rounded-lg glass text-red-400"><Trash2 className="w-4 h-4" /></button>
               </div>
@@ -221,7 +227,7 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
         </div>
       )}
 
-      <MediaPicker open={pickerOpen} onSelect={onPick} onClose={() => setPickerOpen(false)} filter={pickerTarget === 'video' ? 'video' : 'all'} />
+      <MediaPicker open={pickerOpen} onSelect={onPick} onClose={() => setPickerOpen(false)} filter={pickerTarget === 'video' ? 'video' : pickerTarget === 'thumbnail' ? 'image' : 'visual'} />
     </div>
   );
 }

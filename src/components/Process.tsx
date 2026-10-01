@@ -3,14 +3,14 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function Process() {
-  const { processSteps } = usePortfolio();
+  const { processSteps, copy } = usePortfolio();
 
   if (!processSteps || processSteps.length === 0) return null;
 
   return (
     <section id="process" className="section-pad py-24 md:py-32 lg:py-40 relative">
       <div className="container-max">
-        <SectionHeader label="07 — PROCESS" title="From raw footage to final frame." />
+        <SectionHeader label={copy.processLabel} title={copy.processTitle} />
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {processSteps.map((step, i) => (

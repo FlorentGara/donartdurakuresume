@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Upload, Search, Trash2, Copy, Check, FileText } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, doc, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc } from 'firebase/firestore';
 import type { MediaAsset } from '@/lib/types';
+import { removeMediaFromSite } from '@/lib/removeMediaFromSite';
 import { useToast } from './Toast';
 import { PageHeader, Card, LoadingSpinner, EmptyState, ConfirmDialog } from './ui';
 
@@ -36,6 +37,7 @@ export default function AdminMedia() {
 
   const handleUpload = async (files: FileList) => {
     setUploading(true);
+    let uploaded = 0;
 
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -85,26 +87,34 @@ export default function AdminMedia() {
           file_size: file.size,
           mime_type: file.type,
           public_url: data.secure_url,
+          cloudinary_public_id: data.public_id,
+          cloudinary_resource_type: data.resource_type,
           created_at: new Date().toISOString()
         });
-      } catch (err) {
+        uploaded++;
+      } catch {
         toast(`Failed to upload ${file.name}`, 'error');
         continue;
       }
     }
 
     setUploading(false);
-    toast('Upload complete');
+    if (uploaded) toast(`${uploaded} file${uploaded === 1 ? '' : 's'} uploaded`);
     load();
   };
 
   const remove = async () => {
     if (!deleteId) return;
-    
-    await deleteDoc(doc(db, 'media_assets', deleteId));
-    setDeleteId(null);
-    toast('Media deleted (reference removed)');
-    load();
+    const asset = assets.find((item) => item.id === deleteId);
+    if (!asset) return;
+    try {
+      await removeMediaFromSite(deleteId, asset.public_url);
+      setDeleteId(null);
+      toast('Media removed from the website and library');
+      load();
+    } catch {
+      toast('Could not remove media', 'error');
+    }
   };
 
   const copyUrl = (url: string) => {
@@ -213,7 +223,7 @@ export default function AdminMedia() {
         </div>
       )}
 
-      <ConfirmDialog open={!!deleteId} title="Delete this media file?" message="This will permanently remove the file from your library. Note: Since we use Cloudinary for free storage, the file will remain on Cloudinary servers unless deleted via the Cloudinary dashboard." onConfirm={remove} onCancel={() => setDeleteId(null)} />
+      <ConfirmDialog open={!!deleteId} title="Remove this media?" message="This removes the file from the website and library. The stored file remains in Cloudinary until you delete it there." onConfirm={remove} onCancel={() => setDeleteId(null)} />
     </div>
   );
 }

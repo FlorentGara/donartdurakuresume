@@ -5,7 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 interface AuthContextValue {
-  session: any | null; // For compatibility
+  session: { user: User } | null;
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -16,7 +16,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<any | null>(null);
+  const [session, setSession] = useState<{ user: User } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setLoading(false);
         }
-      } catch (err) {
+      } catch {
         if (active) {
           setUser(null);
           setSession(null);
@@ -67,8 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: 'This account is not a dashboard administrator.' };
       }
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Could not sign in.' };
     }
   };
 
@@ -82,8 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await sendPasswordResetEmail(auth, email);
       return { error: null };
-    } catch (error: any) {
-      return { error: error.message };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : 'Could not send the reset email.' };
     }
   };
 

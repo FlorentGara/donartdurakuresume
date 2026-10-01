@@ -7,23 +7,24 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function Contact() {
-  const { socialLinks, siteSettings, categories } = usePortfolio();
+  const { socialLinks, siteSettings, categories, profile, copy } = usePortfolio();
+  const contactEmail = [
+    socialLinks?.find((s) => s.label === 'Email')?.url,
+    siteSettings?.contact_email,
+    profile?.email,
+  ].find((value) => value && value.includes('@') && !value.startsWith('['));
   const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', type: '', message: '' });
 
   const projectTypes = categories?.length 
-    ? [...categories.map(c => c.name), 'Other'] 
-    : ['Video Editing', 'Motion Graphics', 'Other'];
+    ? [...new Set([...categories.map(c => c.name), copy.contactOtherType])]
+    : ['Video Editing', 'Motion Graphics', copy.contactOtherType];
 
   const copyEmail = () => {
-    const email = socialLinks?.find((s) => s.label === 'Email')?.url ?? siteSettings?.contact_email ?? '';
-    if (email && email !== '[EMAIL]') {
-      navigator.clipboard.writeText(email);
-    } else {
-      navigator.clipboard.writeText('donart.duraku@example.com');
-    }
+    if (!contactEmail) return;
+    navigator.clipboard.writeText(contactEmail);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -51,7 +52,7 @@ export default function Contact() {
       }, 4000);
     } catch (err) {
       console.error('Error submitting form:', err);
-      alert('Failed to send message. Please try again.');
+      alert(copy.contactSendError);
     } finally {
       setSubmitting(false);
     }
@@ -63,11 +64,11 @@ export default function Contact() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="container-max relative">
-        <SectionHeader label="08 — LET'S WORK" title="Have a story worth telling?" align="center" />
+        <SectionHeader label={copy.contactLabel} title={copy.contactTitle} align="center" />
 
         <Reveal delay={200}>
           <p className="mt-8 text-center text-bone-300 text-lg max-w-2xl mx-auto leading-relaxed">
-            Let's turn your footage, ideas or next project into something people want to watch.
+            {copy.contactIntro}
           </p>
         </Reveal>
 
@@ -79,59 +80,59 @@ export default function Contact() {
                 <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center mb-6">
                   <Check className="w-8 h-8 text-accent" />
                 </div>
-                <h3 className="text-display text-2xl text-bone-50">Message sent.</h3>
-                <p className="text-bone-400 mt-3">Thanks for reaching out — I'll be in touch shortly.</p>
+                <h3 className="text-display text-2xl text-bone-50">{copy.contactSentTitle}</h3>
+                <p className="text-bone-400 mt-3">{copy.contactSentBody}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="text-label block mb-2">Name</label>
+                  <label className="text-label block mb-2">{copy.contactName}</label>
                   <input
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full bg-ink-900 border hairline rounded-xl px-5 py-4 text-bone-100 placeholder-bone-500 focus:border-accent/50 focus:outline-none transition-colors duration-300"
-                    placeholder="Your name"
+                    placeholder={copy.contactNamePlaceholder}
                   />
                 </div>
                 <div>
-                  <label className="text-label block mb-2">Email</label>
+                  <label className="text-label block mb-2">{copy.contactEmail}</label>
                   <input
                     required
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full bg-ink-900 border hairline rounded-xl px-5 py-4 text-bone-100 placeholder-bone-500 focus:border-accent/50 focus:outline-none transition-colors duration-300"
-                    placeholder="you@email.com"
+                    placeholder={copy.contactEmailPlaceholder}
                   />
                 </div>
                 <div>
-                  <label className="text-label block mb-2">Project Type</label>
+                  <label className="text-label block mb-2">{copy.contactProjectType}</label>
                   <select
                     required
                     value={form.type}
                     onChange={(e) => setForm({ ...form, type: e.target.value })}
                     className="w-full bg-ink-900 border hairline rounded-xl px-5 py-4 text-bone-100 focus:border-accent/50 focus:outline-none transition-colors duration-300 appearance-none"
                   >
-                    <option value="" disabled>Select a project type</option>
+                    <option value="" disabled>{copy.contactProjectTypePlaceholder}</option>
                     {projectTypes.map((t) => (
                       <option key={t} value={t}>{t}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-label block mb-2">Message</label>
+                  <label className="text-label block mb-2">{copy.contactMessage}</label>
                   <textarea
                     required
                     rows={4}
                     value={form.message}
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                     className="w-full bg-ink-900 border hairline rounded-xl px-5 py-4 text-bone-100 placeholder-bone-500 focus:border-accent/50 focus:outline-none transition-colors duration-300 resize-none"
-                    placeholder="Tell me about your project..."
+                    placeholder={copy.contactMessagePlaceholder}
                   />
                 </div>
                 <button type="submit" disabled={submitting} className="btn-primary w-full justify-center">
-                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'START A CONVERSATION'}
+                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : copy.contactButton}
                 </button>
               </form>
             )}
@@ -141,14 +142,15 @@ export default function Contact() {
           <Reveal delay={150}>
             <div className="space-y-8">
               <div>
-                <h3 className="text-label mb-4">Direct</h3>
+                <h3 className="text-label mb-4">{copy.contactDirect}</h3>
                 <button
                   onClick={copyEmail}
+                  disabled={!contactEmail}
                   className="group flex items-center gap-3 text-bone-100 hover:text-accent transition-colors duration-300"
                 >
                   <Mail className="w-5 h-5" />
                   <span className="link-underline">
-                    {socialLinks?.find((s) => s.label === 'Email')?.url ?? siteSettings?.contact_email ?? 'donart.duraku@example.com'}
+                    {contactEmail ?? copy.contactEmailUnavailable}
                   </span>
                   {copied ? (
                     <Check className="w-4 h-4 text-emerald-400" />
@@ -159,10 +161,10 @@ export default function Contact() {
               </div>
 
               <div>
-                <h3 className="text-label mb-4">Social</h3>
+                <h3 className="text-label mb-4">{copy.contactSocial}</h3>
                 <div className="space-y-3">
                   {socialLinks
-                    ?.filter((s) => s.label !== 'Email')
+                    ?.filter((s) => s.label !== 'Email' && s.url.startsWith('http'))
                     .map((link) => (
                       <a
                         key={link.id || link.label}

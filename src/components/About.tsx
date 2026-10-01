@@ -3,21 +3,21 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function About() {
-  const { profile } = usePortfolio();
+  const { profile, copy } = usePortfolio();
 
   if (!profile) return null;
 
   const facts = [
-    { label: 'Based in', value: profile.location },
-    { label: 'Specialization', value: profile.professional_title },
-    { label: 'Experience', value: profile.experience },
-    { label: 'Availability', value: profile.availability_status },
+    { label: copy.aboutBasedIn, value: profile.location },
+    { label: copy.aboutSpecialization, value: profile.professional_title },
+    { label: copy.aboutExperience, value: profile.experience },
+    { label: copy.aboutAvailability, value: profile.availability_status },
   ];
 
   return (
     <section id="about" className="section-pad pt-24 pb-12 md:pt-32 md:pb-16 lg:pt-40 lg:pb-20 relative">
       <div className="container-max">
-        <SectionHeader label="01 — ABOUT" title={profile.about_heading || "About"} />
+        <SectionHeader label={copy.aboutLabel} title={profile.about_heading || copy.navAbout} />
 
         <div className="mt-16 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
           {/* Portrait */}

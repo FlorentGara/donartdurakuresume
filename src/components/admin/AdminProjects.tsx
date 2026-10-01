@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Copy, Star, GripVertical, FolderPlus } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDocs, query, where, orderBy, setDoc, addDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDocs, query, where, orderBy, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import type { Project, ProjectCategory } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Button, LoadingSpinner, EmptyState, ConfirmDialog, StatusBadge } from './ui';
@@ -22,8 +22,8 @@ export default function AdminProjects() {
       getDocs(query(collection(db, 'projects'), orderBy('sort_order', 'asc'))),
       getDocs(query(collection(db, 'project_categories'), orderBy('sort_order', 'asc'))),
     ]);
-    setProjects(pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Project[]);
-    setCategories(cSnap.docs.map(d => ({ id: d.id, ...d.data() })) as ProjectCategory[]);
+    setProjects(pSnap.docs.map(d => ({ ...d.data(), id: d.id })) as Project[]);
+    setCategories(cSnap.docs.map(d => ({ ...d.data(), id: d.id })) as ProjectCategory[]);
     setLoading(false);
   };
 
@@ -50,6 +50,8 @@ export default function AdminProjects() {
       slug: `${p.slug}-copy`,
       sort_order: projects.length,
       featured: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
     toast('Project duplicated');
     load();
@@ -83,7 +85,7 @@ export default function AdminProjects() {
       setNewCat('');
       toast('Category added');
       load();
-    } catch (error) {
+    } catch {
       toast('Failed to add category', 'error');
     }
   };

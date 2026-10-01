@@ -4,6 +4,7 @@ import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import type { SiteSettings } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Button, LoadingSpinner } from './ui';
+import MediaUrlField from './MediaUrlField';
 
 export default function AdminSettings() {
   const toast = useToast();
@@ -41,7 +42,7 @@ export default function AdminSettings() {
         availability_status: data.availability_status,
       });
       toast('Settings saved successfully');
-    } catch (error) {
+    } catch {
       toast('Failed to save settings', 'error');
     }
     setSaving(false);
@@ -58,9 +59,9 @@ export default function AdminSettings() {
         <Card className="lg:col-span-2"><Textarea label="Meta Description" value={data.meta_description} onChange={(v) => setData({ ...data, meta_description: v })} rows={2} /></Card>
         <Card><Input label="Footer Text" value={data.footer_text} onChange={(v) => setData({ ...data, footer_text: v })} /></Card>
         <Card><Input label="Copyright Text" value={data.copyright_text} onChange={(v) => setData({ ...data, copyright_text: v })} /></Card>
-        <Card><Input label="Favicon URL" value={data.favicon_url ?? ''} onChange={(v) => setData({ ...data, favicon_url: v })} /></Card>
-        <Card><Input label="Logo URL" value={data.logo_url ?? ''} onChange={(v) => setData({ ...data, logo_url: v })} /></Card>
-        <Card><Input label="Default OG Image URL" value={data.default_og_image_url ?? ''} onChange={(v) => setData({ ...data, default_og_image_url: v })} /></Card>
+        <Card><MediaUrlField label="Favicon" value={data.favicon_url} onChange={(v) => setData({ ...data, favicon_url: v })} filter="image" /></Card>
+        <Card><MediaUrlField label="Logo" value={data.logo_url} onChange={(v) => setData({ ...data, logo_url: v })} filter="image" /></Card>
+        <Card><MediaUrlField label="Default social image" value={data.default_og_image_url} onChange={(v) => setData({ ...data, default_og_image_url: v })} filter="image" /></Card>
         <Card><Input label="Google Analytics ID" value={data.google_analytics_id ?? ''} onChange={(v) => setData({ ...data, google_analytics_id: v })} placeholder="G-XXXXXXX" /></Card>
         <Card><Input label="Accent Color" value={data.accent_color} onChange={(v) => setData({ ...data, accent_color: v })} placeholder="#d4a574" /></Card>
         <Card><Input label="Availability Status" value={data.availability_status} onChange={(v) => setData({ ...data, availability_status: v })} /></Card>

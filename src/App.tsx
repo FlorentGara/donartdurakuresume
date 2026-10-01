@@ -18,6 +18,7 @@ import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 import CustomCursor from '@/components/CustomCursor';
 import ScrollProgress from '@/components/ScrollProgress';
+import PageMetadata from '@/components/PageMetadata';
 
 // Admin components
 import AdminLogin from '@/components/admin/AdminLogin';
@@ -37,15 +38,14 @@ import AdminSocial from '@/components/admin/AdminSocial';
 import AdminMedia from '@/components/admin/AdminMedia';
 import AdminSettings from '@/components/admin/AdminSettings';
 import AdminSeo from '@/components/admin/AdminSeo';
+import AdminSiteCopy from '@/components/admin/AdminSiteCopy';
 
 
 function PublicSite() {
   return (
     <PortfolioDataProvider>
       <div className="relative bg-ink-950 min-h-screen">
-        <div className="fire-flare fire-flare-1" />
-        <div className="fire-flare fire-flare-2" />
-        <div className="grain-overlay" />
+        <PageMetadata />
         <CustomCursor />
         <ScrollProgress />
         <Navigation />
@@ -147,6 +147,9 @@ function AdminRouter() {
   } else if (seg1 === 'settings') {
     page = <AdminSettings />;
     breadcrumb = ['Admin', 'Site Settings'];
+  } else if (seg1 === 'text') {
+    page = <AdminSiteCopy />;
+    breadcrumb = ['Admin', 'Website Text'];
   } else if (seg1 === 'seo') {
     page = <AdminSeo />;
     breadcrumb = ['Admin', 'SEO'];
