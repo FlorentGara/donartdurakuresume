@@ -8,11 +8,11 @@ export default function Education() {
   if (!education || education.length === 0) return null;
 
   return (
-    <section id="education" className="section-pad py-24 md:py-32 lg:py-40 relative">
+    <section id="education" className="section-pad pt-12 pb-24 md:pt-16 md:pb-32 relative">
       <div className="container-max">
         <SectionHeader label={copy.educationLabel} title={copy.educationTitle} />
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        <div className="mt-10 md:mt-14 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {education.map((item, i) => (
             <Reveal key={item.id || i} delay={i * 150}>
               <div className="group relative h-full p-8 md:p-10 rounded-2xl border hairline bg-ink-900 hover:border-accent/30 transition-all duration-500 overflow-hidden">

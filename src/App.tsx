@@ -46,9 +46,6 @@ function PublicSite() {
     <PortfolioDataProvider>
       <div className="relative bg-ink-950 min-h-screen">
         <PageMetadata />
-        <div className="fire-flare fire-flare-1" />
-        <div className="fire-flare fire-flare-2" />
-        <div className="grain-overlay" />
         <CustomCursor />
         <ScrollProgress />
         <Navigation />
