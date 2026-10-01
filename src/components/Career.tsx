@@ -19,7 +19,7 @@ export default function Career() {
             const skills = Array.isArray(item.skills) ? item.skills : [];
 
             return (
-              <Reveal key={item.id || i} className="relative pl-7 md:pl-10 pb-10 last:pb-0">
+              <Reveal key={item.id || i} variant="left" delay={100} className="relative pl-7 md:pl-10 pb-10 last:pb-0">
                 <span className="absolute -left-[6px] top-2 w-[11px] h-[11px] rounded-full bg-accent ring-4 ring-ink-950" />
                 <div className="grid gap-3 md:grid-cols-[170px_minmax(0,1fr)] md:gap-8">
                   <div className="text-label text-accent pt-1">{period}</div>

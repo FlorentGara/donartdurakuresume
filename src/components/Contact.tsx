@@ -74,7 +74,7 @@ export default function Contact() {
 
         <div className="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 max-w-5xl mx-auto">
           {/* Form */}
-          <Reveal>
+          <Reveal variant="left">
             {submitted ? (
               <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-center rounded-2xl border hairline bg-ink-900 p-10">
                 <div className="w-16 h-16 rounded-full bg-accent/15 flex items-center justify-center mb-6">
@@ -139,7 +139,7 @@ export default function Contact() {
           </Reveal>
 
           {/* Contact info */}
-          <Reveal delay={150}>
+          <Reveal variant="right" delay={150}>
             <div className="space-y-8">
               <div>
                 <h3 className="text-label mb-4">{copy.contactDirect}</h3>

@@ -25,11 +25,11 @@ export default function SectionHeader({
           align === 'center' ? 'justify-center' : ''
         }`}
       >
-        <span className="h-px w-8 bg-accent/50" />
+        <span className="section-header-rule h-px w-8 bg-accent/70" />
         <span className="text-label text-accent">{label}</span>
       </div>
       <h2
-        className={`reveal ${visible ? 'is-visible' : ''} text-display text-4xl md:text-5xl lg:text-6xl mt-6 ${
+        className={`reveal reveal-heading ${visible ? 'is-visible' : ''} text-display text-4xl md:text-5xl lg:text-6xl mt-6 ${
           align === 'center' ? 'mx-auto max-w-3xl' : 'max-w-3xl'
         }`}
         style={{ transitionDelay: '120ms' }}

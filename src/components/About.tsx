@@ -24,12 +24,14 @@ export default function About() {
           {profile.profile_image_url && (
             <Reveal variant="clip" className="lg:col-span-5">
               <div className="relative aspect-[4/5] rounded-2xl overflow-hidden hairline border">
-                <img
-                  src={profile.profile_image_url}
-                  alt={`Portrait of ${profile.full_name}`}
-                  loading="lazy"
-                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                />
+                <div className="scroll-parallax-media absolute -inset-6">
+                  <img
+                    src={profile.profile_image_url}
+                    alt={`Portrait of ${profile.full_name}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-ink-950/60 to-transparent" />
               </div>
             </Reveal>
@@ -45,7 +47,7 @@ export default function About() {
 
             <div className="mt-12 grid grid-cols-2 gap-px bg-white/5 rounded-xl overflow-hidden">
               {facts.map((fact, i) => (
-                <Reveal key={fact.label} delay={i * 100}>
+                <Reveal key={fact.label} variant="scale" delay={i * 100}>
                   <div className="bg-ink-900 p-6 md:p-8 h-full">
                     <div className="text-label mb-2">{fact.label}</div>
                     <div className="text-bone-100 text-sm md:text-base font-medium">{fact.value}</div>

@@ -5,7 +5,7 @@ interface RevealProps {
   children: ReactNode;
   className?: string;
   delay?: number;
-  variant?: 'up' | 'clip';
+  variant?: 'up' | 'clip' | 'left' | 'right' | 'scale';
   as?: 'div' | 'section' | 'article' | 'li' | 'span';
 }
 
@@ -17,7 +17,7 @@ export default function Reveal({
   as: Tag = 'div',
 }: RevealProps) {
   const { ref, visible } = useReveal();
-  const base = variant === 'clip' ? 'reveal-clip' : 'reveal';
+  const base = variant === 'clip' ? 'reveal-clip' : `reveal reveal-${variant}`;
 
   return (
     <Tag

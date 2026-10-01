@@ -60,7 +60,7 @@ export default function Work() {
             <Reveal
               key={project.id}
               delay={(i % 4) * 100}
-              variant="up"
+              variant="scale"
               className={sizeMap[i % sizeMap.length]}
             >
               <button
@@ -68,25 +68,27 @@ export default function Work() {
                 data-cursor="view"
                 className="group relative w-full h-full rounded-2xl overflow-hidden block text-left bg-ink-900/50"
               >
-                {project.thumbnail_url ? (
-                  <img
-                    src={project.thumbnail_url}
-                    alt={project.title}
-                    loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                ) : project.main_video_url ? (
-                  <video
-                    src={project.main_video_url}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-950 to-accent/20 w-full h-full" />
-                )}
+                <div className="scroll-parallax-media absolute -inset-6">
+                  {project.thumbnail_url ? (
+                    <img
+                      src={project.thumbnail_url}
+                      alt={project.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
+                  ) : project.main_video_url ? (
+                    <video
+                      src={project.main_video_url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-ink-900 via-ink-950 to-accent/20" />
+                  )}
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-ink-950/90 via-ink-950/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-500" />
 
                 {/* Top meta */}

@@ -14,7 +14,7 @@ export default function Services() {
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border hairline">
           {services.map((service, i) => (
-            <Reveal key={service.id || service.number} delay={(i % 3) * 100}>
+            <Reveal key={service.id || service.number} variant="scale" delay={(i % 3) * 120}>
               <div className="group relative h-full p-8 md:p-10 bg-ink-900 hover:bg-ink-850 transition-colors duration-500 overflow-hidden">
                 <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-accent/8 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 <div className="relative h-full flex flex-col">

@@ -18,6 +18,7 @@ import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 import CustomCursor from '@/components/CustomCursor';
 import ScrollProgress from '@/components/ScrollProgress';
+import ScrollMotion from '@/components/ScrollMotion';
 import PageMetadata from '@/components/PageMetadata';
 
 // Admin components
@@ -48,6 +49,7 @@ function PublicSite() {
         <PageMetadata />
         <CustomCursor />
         <ScrollProgress />
+        <ScrollMotion />
         <Navigation />
         <main>
           <Hero />

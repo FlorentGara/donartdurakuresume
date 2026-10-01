@@ -14,7 +14,7 @@ export default function Process() {
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {processSteps.map((step, i) => (
-            <Reveal key={step.id || step.number} delay={i * 150}>
+            <Reveal key={step.id || step.number} variant="scale" delay={i * 120}>
               <div className="group relative h-full">
                 {/* Connector line */}
                 {i < processSteps.length - 1 && (

@@ -14,7 +14,7 @@ export default function Education() {
 
         <div className="mt-10 md:mt-14 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {education.map((item, i) => (
-            <Reveal key={item.id || i} delay={i * 150}>
+            <Reveal key={item.id || i} variant="scale" delay={i * 120}>
               <div className="group relative h-full p-8 md:p-10 rounded-2xl border hairline bg-ink-900 hover:border-accent/30 transition-all duration-500 overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                 <div className="relative">

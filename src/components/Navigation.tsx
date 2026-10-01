@@ -10,10 +10,22 @@ export default function Navigation() {
     '#skills': copy.navSkills, '#contact': copy.navContact,
   };
   const [scrolled, setScrolled] = useState(false);
+  const [activeHref, setActiveHref] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+      const marker = window.innerHeight * 0.35;
+      let closest: { href: string; top: number } | null = null;
+      for (const { href } of navLinks) {
+        const top = document.querySelector(href)?.getBoundingClientRect().top;
+        if (top !== undefined && top <= marker && (!closest || top > closest.top)) {
+          closest = { href, top };
+        }
+      }
+      setActiveHref(closest?.href ?? '');
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
@@ -57,7 +69,8 @@ export default function Navigation() {
                 <button
                   key={link.href}
                   onClick={() => handleNav(link.href)}
-                  className="link-underline text-sm text-bone-200 hover:text-bone-50 transition-colors duration-300"
+                  className={`link-underline text-sm transition-colors duration-300 ${activeHref === link.href ? 'text-accent' : 'text-bone-200 hover:text-bone-50'}`}
+                  aria-current={activeHref === link.href ? 'location' : undefined}
                 >
                   {labels[link.href] ?? link.label}
                 </button>
@@ -102,7 +115,8 @@ export default function Navigation() {
             <button
               key={link.href}
               onClick={() => handleNav(link.href)}
-              className="text-left text-4xl text-display text-bone-100 hover:text-accent transition-all duration-500 py-3 border-b hairline"
+              className={`text-left text-4xl text-display hover:text-accent transition-all duration-500 py-3 border-b hairline ${activeHref === link.href ? 'text-accent' : 'text-bone-100'}`}
+              aria-current={activeHref === link.href ? 'location' : undefined}
               style={{
                 opacity: menuOpen ? 1 : 0,
                 transform: menuOpen ? 'translateY(0)' : 'translateY(20px)',

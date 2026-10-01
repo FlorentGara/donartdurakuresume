@@ -12,16 +12,12 @@ export default function Skills() {
       <div className="container-max">
         <SectionHeader label={copy.skillsLabel} title={copy.skillsTitle} />
 
-        <Reveal delay={200}>
-          <div className="mt-16 flex flex-wrap gap-3 md:gap-4">
-            {skills.map((skill, i) => (
+        <div className="mt-16 flex flex-wrap gap-3 md:gap-4">
+          {skills.map((skill, i) => (
+            <Reveal key={skill.id || skill.name} variant="scale" delay={(i % 6) * 70}>
               <div
-                key={skill.id || skill.name}
                 data-cursor="link"
                 className="group relative px-6 py-4 rounded-2xl border hairline bg-ink-900 hover:bg-ink-850 hover:border-accent/30 transition-all duration-500 cursor-default"
-                style={{
-                  animation: `fadeIn 0.6s ease-out ${i * 60}ms both`,
-                }}
               >
                 <div className="absolute inset-0 rounded-2xl bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="relative flex items-center gap-3">
@@ -34,9 +30,9 @@ export default function Skills() {
                   {skill.category}
                 </span>
               </div>
-            ))}
-          </div>
-        </Reveal>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
