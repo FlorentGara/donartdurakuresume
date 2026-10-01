@@ -3,14 +3,14 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function Education() {
-  const { education } = usePortfolio();
+  const { education, copy } = usePortfolio();
 
   if (!education || education.length === 0) return null;
 
   return (
     <section id="education" className="section-pad py-24 md:py-32 lg:py-40 relative">
       <div className="container-max">
-        <SectionHeader label="03 — EDUCATION" title="Where the foundation was built." />
+        <SectionHeader label={copy.educationLabel} title={copy.educationTitle} />
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {education.map((item, i) => (

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { X, Link2, Search } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import type { MediaAsset } from '@/lib/types';
 
 interface MediaPickerProps {
   open: boolean;
-  onSelect: (url: string) => void;
+  onSelect: (url: string, type: 'image' | 'video' | 'document') => void;
   onClose: () => void;
-  filter?: 'image' | 'video' | 'all';
+  filter?: 'image' | 'video' | 'visual' | 'all';
 }
 
 export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }: MediaPickerProps) {
@@ -22,14 +22,15 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
     if (!open) return;
     setLoading(true);
     async function fetchAssets() {
-      let q = query(collection(db, 'media_assets'), orderBy('created_at', 'desc'));
-      if (filter !== 'all') {
-        q = query(collection(db, 'media_assets'), where('file_type', '==', filter), orderBy('created_at', 'desc'));
+      try {
+        const snapshot = await getDocs(collection(db, 'media_assets'));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MediaAsset[];
+        setAssets(data.filter((asset) => filter === 'all' || asset.file_type === filter ||
+          (filter === 'visual' && asset.file_type !== 'document'))
+          .sort((a, b) => b.created_at.localeCompare(a.created_at)));
+      } finally {
+        setLoading(false);
       }
-      const snapshot = await getDocs(q);
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as MediaAsset[];
-      setAssets(data);
-      setLoading(false);
     }
     fetchAssets();
   }, [open, filter]);
@@ -70,7 +71,7 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
                 />
               </div>
               <button
-                onClick={() => { if (urlInput) { onSelect(urlInput); setUrlInput(''); onClose(); } }}
+                onClick={() => { if (urlInput) { onSelect(urlInput, filter === 'video' || /\.(mp4|mov|webm)(\?|$)/i.test(urlInput) ? 'video' : 'image'); setUrlInput(''); onClose(); } }}
                 className="px-5 py-3 rounded-xl bg-accent text-ink-950 text-sm font-medium"
               >Use URL</button>
             </div>
@@ -98,7 +99,7 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
                   {filtered.map((asset) => (
                     <button
                       key={asset.id}
-                      onClick={() => { onSelect(asset.public_url); onClose(); }}
+                      onClick={() => { onSelect(asset.public_url, asset.file_type); onClose(); }}
                       className="group relative aspect-square rounded-xl overflow-hidden border hairline hover:border-accent/40 transition-colors"
                     >
                       {asset.file_type === 'image' && <img src={asset.public_url} alt={asset.filename} className="w-full h-full object-cover" loading="lazy" />}

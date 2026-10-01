@@ -23,7 +23,7 @@ export default {
           500: '#7d7d72',
         },
         accent: {
-          DEFAULT: '#d4a574',
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
           50: '#fbf6ef',
           100: '#f5e9d8',
           200: '#ecd2ad',

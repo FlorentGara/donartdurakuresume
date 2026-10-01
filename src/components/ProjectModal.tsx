@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import type { Project, ProjectMedia } from '@/lib/types';
+import { usePortfolio } from '@/lib/portfolio-context';
 
 interface ProjectModalProps {
   project: Project;
@@ -10,6 +11,7 @@ interface ProjectModalProps {
 }
 
 export default function ProjectModal({ project, media = [], onClose, onNext }: ProjectModalProps) {
+  const { copy } = usePortfolio();
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
@@ -36,7 +38,7 @@ export default function ProjectModal({ project, media = [], onClose, onNext }: P
           onClick={onClose}
           className="flex items-center gap-2 text-bone-300 hover:text-accent transition-colors text-sm"
         >
-          Close <X className="w-4 h-4" />
+          {copy.projectClose} <X className="w-4 h-4" />
         </button>
       </div>
 
@@ -47,10 +49,10 @@ export default function ProjectModal({ project, media = [], onClose, onNext }: P
             <h2 className="text-display text-4xl md:text-5xl lg:text-6xl text-bone-50">{project.title}</h2>
             <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { label: 'Category', value: project.category_name },
-                { label: 'Year', value: project.year },
-                { label: 'Client', value: project.client },
-                { label: 'Role', value: project.role },
+                { label: copy.projectCategory, value: project.category_name },
+                { label: copy.projectYear, value: project.year },
+                { label: copy.projectClient, value: project.client },
+                { label: copy.projectRole, value: project.role },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="text-label mb-1">{item.label}</div>
@@ -77,7 +79,7 @@ export default function ProjectModal({ project, media = [], onClose, onNext }: P
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-ink-900 via-ink-950 to-accent/20 text-bone-300">
-                Video coming soon
+                {copy.projectVideoComingSoon}
               </div>
             )}
           </div>
@@ -85,16 +87,16 @@ export default function ProjectModal({ project, media = [], onClose, onNext }: P
           {/* Description */}
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2">
-              <h3 className="text-label text-accent mb-4">About the project</h3>
+              <h3 className="text-label text-accent mb-4">{copy.projectAbout}</h3>
               <p className="text-bone-200 text-lg leading-relaxed whitespace-pre-wrap">{project.description}</p>
             </div>
             <div>
-              <h3 className="text-label text-accent mb-4">My Role</h3>
+              <h3 className="text-label text-accent mb-4">{copy.projectMyRole}</h3>
               <p className="text-bone-200">{project.role}</p>
               
               {tools.length > 0 && (
                 <>
-                  <h3 className="text-label text-accent mb-4 mt-8">Tools</h3>
+                  <h3 className="text-label text-accent mb-4 mt-8">{copy.projectTools}</h3>
                   <div className="flex flex-wrap gap-2">
                     {tools.map((t) => (
                       <span
@@ -145,9 +147,9 @@ export default function ProjectModal({ project, media = [], onClose, onNext }: P
               className="group flex items-center justify-between w-full"
             >
               <div>
-                <div className="text-label mb-2">Next Project</div>
+                <div className="text-label mb-2">{copy.projectNextLabel}</div>
                 <span className="text-display text-2xl md:text-3xl text-bone-100 group-hover:text-accent transition-colors duration-300">
-                  View next work
+                  {copy.projectNextAction}
                 </span>
               </div>
               <div className="w-12 h-12 rounded-full border hairline flex items-center justify-center text-bone-200 group-hover:bg-accent group-hover:text-ink-950 group-hover:border-accent transition-all duration-500">

@@ -3,14 +3,14 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function Services() {
-  const { services } = usePortfolio();
+  const { services, copy } = usePortfolio();
 
   if (!services || services.length === 0) return null;
 
   return (
     <section id="services" className="section-pad py-24 md:py-32 lg:py-40 relative">
       <div className="container-max">
-        <SectionHeader label="05 — SERVICES" title="What I do" />
+        <SectionHeader label={copy.servicesLabel} title={copy.servicesTitle} />
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden border hairline">
           {services.map((service, i) => (

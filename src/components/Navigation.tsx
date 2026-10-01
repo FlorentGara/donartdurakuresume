@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import { navLinks, profile } from '@/data/portfolio';
+import { navLinks } from '@/data/portfolio';
+import { usePortfolio } from '@/lib/portfolio-context';
 
 export default function Navigation() {
+  const { copy, profile, siteSettings } = usePortfolio();
+  const labels: Record<string, string> = {
+    '#work': copy.navWork, '#about': copy.navAbout, '#career': copy.navCareer,
+    '#skills': copy.navSkills, '#contact': copy.navContact,
+  };
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -41,7 +47,9 @@ export default function Navigation() {
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="text-sm font-semibold tracking-tightest text-bone-50 hover:text-accent transition-colors duration-300"
             >
-              {profile.name.toUpperCase()}
+              {siteSettings?.logo_url ? (
+                <img src={siteSettings.logo_url} alt={profile?.full_name ?? 'Home'} className="h-9 w-auto max-w-40 object-contain" />
+              ) : (profile?.full_name?.toUpperCase() ?? 'DONART DURAKU')}
             </button>
 
             <div className="hidden lg:flex items-center gap-8">
@@ -51,13 +59,13 @@ export default function Navigation() {
                   onClick={() => handleNav(link.href)}
                   className="link-underline text-sm text-bone-200 hover:text-bone-50 transition-colors duration-300"
                 >
-                  {link.label}
+                  {labels[link.href] ?? link.label}
                 </button>
               ))}
               <div className="flex items-center gap-2 pl-2 ml-2 border-l hairline">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot" />
                 <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-bone-400">
-                  Available
+                  {copy.navAvailability}
                 </span>
               </div>
             </div>
@@ -81,7 +89,9 @@ export default function Navigation() {
       >
         <div className="flex items-center justify-between px-6 py-6">
           <span className="text-sm font-semibold tracking-tightest text-bone-50">
-            {profile.name.toUpperCase()}
+            {siteSettings?.logo_url ? (
+              <img src={siteSettings.logo_url} alt={profile?.full_name ?? 'Home'} className="h-9 w-auto max-w-40 object-contain" />
+            ) : (profile?.full_name?.toUpperCase() ?? 'DONART DURAKU')}
           </span>
           <button onClick={() => setMenuOpen(false)} aria-label="Close menu" className="text-bone-100 p-2">
             <X className="w-5 h-5" />
@@ -99,13 +109,13 @@ export default function Navigation() {
                 transition: `opacity 0.5s ${i * 80 + 200}ms, transform 0.5s ${i * 80 + 200}ms`,
               }}
             >
-              {link.label}
+                {labels[link.href] ?? link.label}
             </button>
           ))}
           <div className="flex items-center gap-2 mt-8">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot" />
             <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-bone-400">
-              {profile.availability}
+              {profile?.availability_status ?? copy.navAvailability}
             </span>
           </div>
         </div>

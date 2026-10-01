@@ -32,7 +32,7 @@ export default function AdminServices() {
         await addDoc(collection(db, 'services'), { ...payload, sort_order: items.length });
         toast('Service created');
       }
-    } catch (e) {
+    } catch {
       toast('Failed to save service', 'error');
     }
     setEditing(null);

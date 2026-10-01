@@ -4,6 +4,7 @@ import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
 import type { SeoSettings } from '@/lib/types';
 import { useToast } from './Toast';
 import { PageHeader, Card, Input, Textarea, Button, LoadingSpinner } from './ui';
+import MediaUrlField from './MediaUrlField';
 
 export default function AdminSeo() {
   const toast = useToast();
@@ -33,7 +34,7 @@ export default function AdminSeo() {
         canonical_url: data.canonical_url,
       });
       toast('SEO settings saved successfully');
-    } catch (e) {
+    } catch {
       toast('Failed to save SEO settings', 'error');
     }
     setSaving(false);
@@ -50,8 +51,8 @@ export default function AdminSeo() {
         <Card className="lg:col-span-2"><Textarea label="Meta Description" value={data.meta_description} onChange={(v) => setData({ ...data, meta_description: v })} rows={2} /></Card>
         <Card><Input label="OG Title" value={data.og_title} onChange={(v) => setData({ ...data, og_title: v })} /></Card>
         <Card className="lg:col-span-2"><Textarea label="OG Description" value={data.og_description} onChange={(v) => setData({ ...data, og_description: v })} rows={2} /></Card>
-        <Card><Input label="OG Image URL" value={data.og_image_url ?? ''} onChange={(v) => setData({ ...data, og_image_url: v })} /></Card>
-        <Card><Input label="Twitter/X Image URL" value={data.twitter_image_url ?? ''} onChange={(v) => setData({ ...data, twitter_image_url: v })} /></Card>
+        <Card><MediaUrlField label="Open Graph image" value={data.og_image_url} onChange={(v) => setData({ ...data, og_image_url: v })} filter="image" /></Card>
+        <Card><MediaUrlField label="Twitter/X image" value={data.twitter_image_url} onChange={(v) => setData({ ...data, twitter_image_url: v })} filter="image" /></Card>
       </div>
     </div>
   );

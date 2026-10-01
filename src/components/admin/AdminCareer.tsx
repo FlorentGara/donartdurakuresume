@@ -34,7 +34,7 @@ export default function AdminCareer() {
         await addDoc(collection(db, 'career_entries'), { ...payload, sort_order: items.length });
         toast('Career entry created');
       }
-    } catch (error) {
+    } catch {
       toast(id ? 'Failed to save' : 'Failed to create', 'error');
       return;
     }
@@ -48,7 +48,7 @@ export default function AdminCareer() {
       await deleteDoc(doc(db, 'career_entries', deleteId));
       setDeleteId(null);
       toast('Career entry deleted');
-    } catch (error) {
+    } catch {
       setDeleteId(null);
       toast('Failed to delete', 'error');
     }

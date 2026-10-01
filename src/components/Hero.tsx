@@ -4,7 +4,7 @@ import { usePortfolio } from '@/lib/portfolio-context';
 import ArrowButton from './ArrowButton';
 
 export default function Hero() {
-  const { profile, hero } = usePortfolio();
+  const { profile, hero, copy } = usePortfolio();
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -172,7 +172,7 @@ export default function Hero() {
           transitionDelay: '1400ms',
         }}
       >
-        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-bone-500">Scroll</span>
+        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-bone-500">{copy.heroScroll}</span>
         <ArrowDown className="w-3 h-3 text-bone-500 animate-bounce" />
       </div>
     </section>

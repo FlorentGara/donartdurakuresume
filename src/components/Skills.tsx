@@ -3,14 +3,14 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function Skills() {
-  const { skills } = usePortfolio();
+  const { skills, copy } = usePortfolio();
 
   if (!skills || skills.length === 0) return null;
 
   return (
     <section id="skills" className="section-pad py-24 md:py-32 lg:py-40 relative">
       <div className="container-max">
-        <SectionHeader label="06 — SKILLS" title="Tools of the trade." />
+        <SectionHeader label={copy.skillsLabel} title={copy.skillsTitle} />
 
         <Reveal delay={200}>
           <div className="mt-16 flex flex-wrap gap-3 md:gap-4">

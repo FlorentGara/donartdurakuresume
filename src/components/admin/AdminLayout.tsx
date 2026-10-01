@@ -27,6 +27,7 @@ const navItems = [
   { label: 'Social Links', icon: Link2, path: '/admin/social' },
   { label: 'Media Library', icon: Image, path: '/admin/media' },
   { label: 'Site Settings', icon: Settings, path: '/admin/settings' },
+  { label: 'Website Text', icon: Settings, path: '/admin/text' },
   { label: 'SEO', icon: Search, path: '/admin/seo' },
 ];
 

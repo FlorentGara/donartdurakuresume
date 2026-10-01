@@ -7,7 +7,7 @@ import Reveal from './Reveal';
 import ProjectModal from './ProjectModal';
 
 export default function Work() {
-  const { projects, categories, projectMedia } = usePortfolio();
+  const { projects, categories, projectMedia, copy } = usePortfolio();
   const [active, setActive] = useState<string>('All');
   const [selected, setSelected] = useState<Project | null>(null);
 
@@ -33,7 +33,7 @@ export default function Work() {
   return (
     <section id="work" className="section-pad py-24 md:py-32 lg:py-40 relative">
       <div className="container-max">
-        <SectionHeader label="04 — SELECTED WORK" title="Work worth watching." />
+        <SectionHeader label={copy.workLabel} title={copy.workTitle} />
 
         {/* Category filter */}
         <Reveal delay={200}>
@@ -48,7 +48,7 @@ export default function Work() {
                     : 'text-bone-300 border-white/10 hover:border-accent/40 hover:text-bone-100'
                 }`}
               >
-                {cat.toUpperCase()}
+                {(cat === 'All' ? copy.workAll : cat).toUpperCase()}
               </button>
             ))}
           </div>

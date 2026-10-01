@@ -13,8 +13,8 @@ const firebaseConfig = {
 };
 
 let app: FirebaseApp | undefined;
-export let auth: Auth | any = {};
-export let db: Firestore | any = {};
+export let auth: Auth = {} as Auth;
+export let db: Firestore = {} as Firestore;
 
 try {
   if (firebaseConfig.apiKey) {

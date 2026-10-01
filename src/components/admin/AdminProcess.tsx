@@ -27,7 +27,7 @@ export default function AdminProcess() {
     if (!editing) return;
     const { id, ...payload } = editing;
     if (id) {
-      await updateDoc(doc(db, 'process_steps', id), payload as any);
+      await updateDoc(doc(db, 'process_steps', id), payload);
       toast('Process step saved');
     } else {
       await addDoc(collection(db, 'process_steps'), { ...payload, sort_order: items.length });

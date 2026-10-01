@@ -3,14 +3,14 @@ import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
 export default function Career() {
-  const { career } = usePortfolio();
+  const { career, copy } = usePortfolio();
 
   if (!career || career.length === 0) return null;
 
   return (
     <section id="career" className="section-pad pt-12 pb-24 md:pt-16 md:pb-32 lg:pt-20 lg:pb-40 relative">
       <div className="container-max">
-        <SectionHeader label="02 — CAREER" title="Experience" />
+        <SectionHeader label={copy.careerLabel} title={copy.careerTitle} />
 
         <div className="mt-16 md:mt-20 relative">
           {/* Vertical line */}

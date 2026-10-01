@@ -2,7 +2,11 @@ import { navLinks } from '@/data/portfolio';
 import { usePortfolio } from '@/lib/portfolio-context';
 
 export default function Footer() {
-  const { profile, socialLinks, siteSettings } = usePortfolio();
+  const { profile, socialLinks, siteSettings, copy } = usePortfolio();
+  const labels: Record<string, string> = {
+    '#work': copy.navWork, '#about': copy.navAbout, '#career': copy.navCareer,
+    '#skills': copy.navSkills, '#contact': copy.navContact,
+  };
 
   const handleNav = (href: string) => {
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
@@ -14,13 +18,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
           {/* Brand */}
           <div>
-            <h3 className="text-display text-2xl text-bone-50">{profile?.full_name?.toUpperCase()}</h3>
+            {siteSettings?.logo_url ? (
+              <img src={siteSettings.logo_url} alt={profile?.full_name ?? 'Home'} className="h-12 w-auto max-w-48 object-contain" />
+            ) : (
+              <h3 className="text-display text-2xl text-bone-50">{profile?.full_name?.toUpperCase()}</h3>
+            )}
             <p className="text-bone-400 text-sm mt-2">{profile?.professional_title}</p>
           </div>
 
           {/* Nav */}
           <div>
-            <div className="text-label mb-4">Navigation</div>
+            <div className="text-label mb-4">{copy.footerNavigation}</div>
             <div className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <button
@@ -28,7 +36,7 @@ export default function Footer() {
                   onClick={() => handleNav(link.href)}
                   className="link-underline text-bone-300 hover:text-bone-50 transition-colors text-sm w-fit"
                 >
-                  {link.label}
+                  {labels[link.href] ?? link.label}
                 </button>
               ))}
             </div>
@@ -36,9 +44,9 @@ export default function Footer() {
 
           {/* Social */}
           <div>
-            <div className="text-label mb-4">Connect</div>
+            <div className="text-label mb-4">{copy.footerConnect}</div>
             <div className="flex flex-col gap-2">
-              {socialLinks?.map((link) => (
+              {socialLinks?.filter((link) => link.url.startsWith('http') || link.url.startsWith('mailto:')).map((link) => (
                 <a
                   key={link.id || link.label}
                   href={link.url.startsWith('http') ? link.url : undefined}
