@@ -133,7 +133,7 @@ export default function AdminProjectEditor({ projectId }: AdminProjectEditorProp
         <Card>
           <Select
             label="Category"
-            value={project.category_id ?? ''}
+            value={project.category_id ?? categories.find((category) => category.name === project.category_name)?.id ?? ''}
             onChange={(v) => {
               const cat = categories.find((c) => c.id === v);
               setProject({ ...project, category_id: v || null, category_name: cat?.name ?? 'Other' });

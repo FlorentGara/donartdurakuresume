@@ -17,10 +17,12 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
   const [search, setSearch] = useState('');
   const [urlMode, setUrlMode] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setLoading(true);
+    setError('');
     async function fetchAssets() {
       try {
         const snapshot = await getDocs(collection(db, 'media_assets'));
@@ -28,6 +30,8 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
         setAssets(data.filter((asset) => filter === 'all' || asset.file_type === filter ||
           (filter === 'visual' && asset.file_type !== 'document'))
           .sort((a, b) => b.created_at.localeCompare(a.created_at)));
+      } catch {
+        setError('Could not load media. Check your Firebase access.');
       } finally {
         setLoading(false);
       }
@@ -92,6 +96,8 @@ export default function MediaPicker({ open, onSelect, onClose, filter = 'all' }:
             <div className="flex-1 overflow-y-auto p-4">
               {loading ? (
                 <p className="text-bone-500 text-sm text-center py-10">Loading...</p>
+              ) : error ? (
+                <p className="text-red-400 text-sm text-center py-10">{error}</p>
               ) : filtered.length === 0 ? (
                 <p className="text-bone-500 text-sm text-center py-10">No media found. Upload files in the Media Library first.</p>
               ) : (

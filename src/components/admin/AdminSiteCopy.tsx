@@ -48,8 +48,8 @@ export default function AdminSiteCopy() {
             <h2 className="text-bone-50 text-lg mb-5">{group.title}</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {group.fields.map(({ key, label }) => (
-                <div key={key} className={copy[key].length > 75 ? 'lg:col-span-2' : ''}>
-                  {copy[key].length > 75 ? (
+                <div key={key} className={defaultSiteCopy[key].length > 75 ? 'lg:col-span-2' : ''}>
+                  {defaultSiteCopy[key].length > 75 ? (
                     <Textarea label={label} value={copy[key]} onChange={(value) => setCopy({ ...copy, [key]: value })} rows={3} />
                   ) : (
                     <Input label={label} value={copy[key]} onChange={(value) => setCopy({ ...copy, [key]: value })} />
