@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import publishedPortfolio from '@/data/publishedPortfolio.json';
 import type {
   Profile, HeroSettings, CareerEntry, EducationEntry,
   Project, ProjectMedia, Service, Skill, ProcessStep,
@@ -72,6 +73,27 @@ export function usePortfolioData() {
         ]);
 
         if (cancelled) return;
+
+        // The Firebase migration created an empty database. Keep the last
+        // published portfolio visible until content is moved into Firestore.
+        if (!p && !h && !ss && !c.length && !e.length && !pr.length && !sv.length && !sk.length && !ps.length) {
+          setProfile(publishedPortfolio.profiles as Profile);
+          setHero(publishedPortfolio.hero_settings as HeroSettings);
+          setCareer(publishedPortfolio.career_entries as CareerEntry[]);
+          setEducation(publishedPortfolio.education_entries as EducationEntry[]);
+          setProjects(publishedPortfolio.projects.map((project) => ({
+            ...project,
+            // These files were local to the old site and now return 404.
+            main_video_url: project.main_video_url?.startsWith('/media/') ? null : project.main_video_url,
+          })) as Project[]);
+          setCategories(publishedPortfolio.project_categories as ProjectCategory[]);
+          setServices(publishedPortfolio.services as Service[]);
+          setSkills(publishedPortfolio.skills as Skill[]);
+          setProcessSteps(publishedPortfolio.process_steps as ProcessStep[]);
+          setSocialLinks(publishedPortfolio.social_links as SocialLink[]);
+          setSiteSettings(publishedPortfolio.site_settings as SiteSettings);
+          return;
+        }
 
         setProfile(p);
         setHero(h);
