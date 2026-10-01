@@ -69,12 +69,16 @@ export default function ProjectModal({ project, media = [], onClose, onNext }: P
                 controls
                 className="w-full h-full object-cover"
               />
-            ) : (
+            ) : project.thumbnail_url ? (
               <img
-                src={project.thumbnail_url || ''}
+                src={project.thumbnail_url}
                 alt={project.title}
                 className="w-full h-full object-cover"
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-ink-900 via-ink-950 to-accent/20 text-bone-300">
+                Video coming soon
+              </div>
             )}
           </div>
 

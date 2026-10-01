@@ -85,7 +85,7 @@ export default function Work() {
                     className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-ink-900 w-full h-full" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-950 to-accent/20 w-full h-full" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-ink-950/90 via-ink-950/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity duration-500" />
 
