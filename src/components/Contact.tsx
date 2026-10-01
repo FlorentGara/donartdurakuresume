@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Check, Copy, Mail, Loader2 } from 'lucide-react';
 import { usePortfolio } from '@/lib/portfolio-context';
-import { supabase } from '@/lib/supabase';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import SectionHeader from './SectionHeader';
 import Reveal from './Reveal';
 
@@ -32,14 +33,16 @@ export default function Contact() {
     setSubmitting(true);
     
     try {
-      const { error } = await supabase.from('contact_messages').insert({
+      await addDoc(collection(db, 'contact_messages'), {
         name: form.name,
         email: form.email,
         project_type: form.type,
         message: form.message,
+        is_read: false,
+        status: 'unread',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
-
-      if (error) throw error;
 
       setSubmitted(true);
       setTimeout(() => {
